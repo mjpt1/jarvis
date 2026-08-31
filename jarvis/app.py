@@ -47,7 +47,8 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
     _enable_dpi_awareness()
 
     tts.configure(cfg.voice)
-    reports.configure(cfg.user_title, cfg.news_rss_url)
+    reports.configure(cfg.user_title, cfg.news_rss_url, author=cfg.author,
+                      secondary_city=cfg.secondary_city, secondary_tz=cfg.secondary_tz)
     claude_client.configure(api_key=cfg.anthropic_api_key, model=cfg.anthropic_model,
                             max_turns=cfg.chat_history_max_turns, title=cfg.user_title,
                             allow_actions=cfg.claude_can_run_actions)
@@ -67,7 +68,7 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
 
     scale = min(w / 1280, h / 800)
     fonts = Fonts(scale=max(0.75, scale))
-    orb = Orb((w, h))
+    orb = Orb((w, h), points=cfg.orb_points, bands=cfg.orb_bands)
 
     # --- تردهای پس‌زمینه ---
     from .vision import camera_worker, event_lines
@@ -106,6 +107,7 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
                     fullscreen = not fullscreen
                     screen = _make_screen(fullscreen, cfg.windowed_size)
                     w, h = screen.get_size()
+                    scale = max(0.75, min(w / 1280, h / 800))
                     orb.resize((w, h))
                 elif event.key in MANUAL_TEST_KEYS and cfg.enable_camera is not None:
                     _fire_manual(MANUAL_TEST_KEYS[event.key], cfg.user_title)
@@ -118,7 +120,7 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
             awaiting = STATE.awaiting_command
 
         cx, cy = w // 2, h // 2
-        base_scale = min(w, h) / 900.0 * 4.0
+        base_scale = min(w, h) * 0.30
 
         screen.fill(widgets.theme.BG)
         widgets.corner_ticks(screen, w, h, t)
@@ -129,8 +131,10 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
         widgets.mic_meter(screen, 24, int(300 * scale), 220, 26, fonts)
         widgets.clock_panel(screen, w // 2, 26, fonts)
         widgets.weather_panel(screen, w - 40, 28, fonts)
+        widgets.secondary_panel(screen, w - 40, int(96 * scale), fonts, cfg.secondary_tz)
         widgets.log_panel(screen, 24, h - 200, fonts)
         widgets.status_chips(screen, 28, h - 232, fonts)
+        widgets.author_credit(screen, w, h, fonts, cfg.author)
 
         widgets.subtitle_bar(screen, w, h, fonts, subtitle)
         if not cache_ready:

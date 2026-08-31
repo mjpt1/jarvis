@@ -52,6 +52,13 @@ def system_stats_worker(cfg: Config) -> None:
             time.sleep(cfg.system_stats_interval)
 
 
+def _current_temp(lat, lon, ua) -> float | None:
+    url = (f"https://api.open-meteo.com/v1/forecast?latitude={lat}"
+           f"&longitude={lon}&current_weather=true")
+    with urllib.request.urlopen(urllib.request.Request(url, headers=ua), timeout=5) as r:
+        return json.loads(r.read().decode()).get("current_weather", {}).get("temperature")
+
+
 def weather_worker(cfg: Config) -> None:
     ua = {"User-Agent": "Mozilla/5.0"}
     while STATE.running:
@@ -61,15 +68,19 @@ def weather_worker(cfg: Config) -> None:
                 loc = json.loads(r.read().decode())
             lat, lon, city = loc.get("lat"), loc.get("lon"), loc.get("city", "")
             if lat is not None and lon is not None:
-                url = (f"https://api.open-meteo.com/v1/forecast?latitude={lat}"
-                       f"&longitude={lon}&current_weather=true")
-                with urllib.request.urlopen(urllib.request.Request(url, headers=ua),
-                                            timeout=5) as r2:
-                    cw = json.loads(r2.read().decode()).get("current_weather", {})
+                temp = _current_temp(lat, lon, ua)
                 with STATE.lock:
-                    STATE.weather_temp = cw.get("temperature")
+                    STATE.weather_temp = temp
                     STATE.location_name = city
         except Exception as exc:
             log.debug("آب‌وهوا در دسترس نیست: %s", exc)
+
+        try:
+            temp2 = _current_temp(cfg.secondary_lat, cfg.secondary_lon, ua)
+            with STATE.lock:
+                STATE.secondary_temp = temp2
+                STATE.secondary_name = cfg.secondary_city
+        except Exception as exc:
+            log.debug("آب‌وهوای مکان دوم در دسترس نیست: %s", exc)
         if STATE.stop_event.wait(cfg.weather_update_interval):
             break

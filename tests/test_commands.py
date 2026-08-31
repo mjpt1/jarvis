@@ -29,7 +29,23 @@ def test_match_folder_alias(engine):
 
 
 def test_unknown_returns_none(engine):
-    assert engine.match("قیمت دلار امروز چنده") is None
+    assert engine.match("قیمت دلار در بازار آزاد") is None
+
+
+def test_author_command(engine):
+    cmd = engine.match("جارویس سازنده‌ات کیه")
+    assert cmd is not None and cmd.name == "AUTHOR"
+
+
+def test_moncton_commands(engine):
+    assert engine.match("ساعت مونکتون").name == "SEC_TIME"
+    assert engine.match("هوای مونکتون چطوره").name == "SEC_WEATHER"
+
+
+def test_author_report_mentions_name():
+    from jarvis import reports
+    reports.configure("قربان", "http://x", author="محسن جباره اصل")
+    assert "محسن جباره اصل" in reports.author()
 
 
 def test_handle_search(engine, monkeypatch):

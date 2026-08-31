@@ -97,9 +97,15 @@ def _play_file(path, subtitle: str) -> None:
     _duck_music(True)
     try:
         snd = pygame.mixer.Sound(str(path))
+        envelope = _amplitude_envelope(snd)
         ch = pygame.mixer.Channel(TTS_CHANNEL_ID)
+        length = max(0.05, snd.get_length())
         ch.play(snd)
+        t0 = time.time()
         while ch.get_busy() and STATE.running:
+            frac = (time.time() - t0) / length
+            with STATE.lock:
+                STATE.tts_level = _sample_envelope(envelope, frac)
             time.sleep(0.03)
     except Exception as exc:
         log.warning("پخش صدا ناموفق بود: %s", exc)
@@ -108,6 +114,35 @@ def _play_file(path, subtitle: str) -> None:
         with STATE.lock:
             STATE.speaking = False
             STATE.current_subtitle = ""
+            STATE.tts_level = 0.0
+
+
+def _amplitude_envelope(snd, buckets: int = 240):
+    """پاکتِ دامنه‌ی صدا (۰..۱) برای هدایتِ اکولایزر هنگام صحبتِ جارویس."""
+    try:
+        import numpy as np
+        import pygame
+        arr = pygame.sndarray.array(snd).astype("float32")
+        if arr.ndim > 1:
+            arr = arr.mean(axis=1)
+        if arr.size == 0:
+            return None
+        arr = np.abs(arr) / 32768.0
+        pad = (-arr.size) % buckets
+        if pad:
+            arr = np.concatenate([arr, np.zeros(pad, dtype="float32")])
+        env = arr.reshape(buckets, -1).mean(axis=1)
+        peak = float(env.max()) or 1.0
+        return (env / peak).tolist()
+    except Exception:
+        return None
+
+
+def _sample_envelope(env, frac: float) -> float:
+    if not env:
+        return 0.6
+    i = max(0, min(len(env) - 1, int(frac * len(env))))
+    return float(env[i])
 
 
 def say(text: str, *, blocking: bool = False) -> None:

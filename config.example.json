@@ -1,6 +1,7 @@
 {
   "voice": "fa-IR-FaridNeural",
   "user_title": "قربان",
+  "author": "محسن جباره اصل",
   "website_url": "https://example.com",
   "music_dir": "C:\\Users\\YOU\\Music",
   "news_rss_url": "https://feeds.bbci.co.uk/persian/rss.xml",
@@ -9,6 +10,13 @@
   "fps": 60,
   "show_debug_on_start": false,
   "windowed_size": [1100, 760],
+  "orb_points": 1400,
+  "orb_bands": 48,
+
+  "secondary_city": "مونکتون",
+  "secondary_lat": 46.0878,
+  "secondary_lon": -64.7782,
+  "secondary_tz": "America/Moncton",
 
   "camera_index": 0,
   "enable_camera": true,

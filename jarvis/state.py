@@ -21,7 +21,8 @@ class SharedState:
     awaiting_command: bool = False
     last_heard_text: str = ""
     partial_text: str = ""
-    mic_level: float = 0.0          # 0..1 برای نمایش مقیاس صدا
+    mic_level: float = 0.0          # 0..1 دامنه‌ی صدای کاربر
+    tts_level: float = 0.0          # 0..1 دامنه‌ی صدای جارویس هنگام صحبت
     voice_enabled: bool = False     # آیا ترد صدا واقعاً بالا آمد
 
     # دوربین/چهره
@@ -45,6 +46,10 @@ class SharedState:
     weather_desc: str = ""
     location_name: str = ""
 
+    # مکان دوم (مونکتون)
+    secondary_temp: float | None = None
+    secondary_name: str = ""
+
     # لاگ رویداد روی HUD
     event_log: list[tuple[str, str]] = field(default_factory=list)
 
@@ -61,6 +66,11 @@ class SharedState:
 
     def stop(self) -> None:
         self.stop_event.set()
+
+    def audio_energy(self) -> float:
+        """بیشینه‌ی دامنه‌ی صدای کاربر و جارویس — ورودیِ اکولایزر."""
+        with self.lock:
+            return max(self.mic_level, self.tts_level)
 
     def log(self, text: str) -> None:
         ts = datetime.datetime.now().strftime("%H:%M:%S")

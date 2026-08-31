@@ -65,10 +65,35 @@ class CommandEngine:
                   lambda: say(reports.elapsed())))
         C(Command("SYSTEM", ["وضعیت سیستم", "سیستم چطوره", "سی پی یو", "پردازنده", "رم چقدره"],
                   lambda: say(reports.system())))
-        C(Command("WEATHER", ["هوا چطوره", "اب و هوا", "دمای هوا", "چند درجه‌ست"],
+        C(Command("WEATHER", ["هوا چطوره", "اب و هوا", "دمای هوا", "چند درجه‌ست", "هوای اینجا"],
                   lambda: say(reports.weather())))
         C(Command("NEWS", ["اخبار", "خبر جدید", "چه خبر"],
                   lambda: say(reports.news())))
+        C(Command("AUTHOR", ["کی تو رو ساخته", "برنامه نویست کیه", "سازنده‌ات کیه",
+                             "کی برنامه نویسیت کرده", "توسعه دهنده"],
+                  lambda: say(reports.author())))
+        C(Command("SEC_TIME", ["ساعت مونکتون", "ساعت کانادا", "مونکتون ساعت چنده",
+                               "اونجا ساعت چنده"],
+                  lambda: say(reports.secondary_clock())))
+        C(Command("SEC_WEATHER", ["هوای مونکتون", "دمای مونکتون", "هوای کانادا",
+                                  "مونکتون چند درجه"],
+                  lambda: say(reports.secondary_weather())))
+        C(Command("DATE", ["امروز چندمه", "تاریخ امروز", "چه تاریخیه", "امروز چه روزیه"],
+                  lambda: say(_date_line(T))))
+        C(Command("BATTERY", ["باتری چقدره", "شارژ چقدره", "باتری چند درصده"],
+                  lambda: say(reports.system())))
+        C(Command("MUTE_TOGGLE", ["صدای خودت رو قطع کن", "حرف نزن دیگه"], self._mute_events))
+        C(Command("THANKS", ["ممنون", "مرسی", "دستت درد نکنه", "خسته نباشی"],
+                  lambda: say(random.choice([f"خواهش می‌کنم {T}.",
+                                             f"کاری نکردم {T}.", f"همیشه در خدمتم {T}."]))))
+        C(Command("WHO_AM_I", ["من کیم", "اسم من چیه", "من رو می‌شناسی"],
+                  lambda: say(f"شما {T} هستید، کاربر اصلیِ من.")))
+        C(Command("JOKE", ["یه جوک بگو", "یه چیز بامزه بگو", "بخندونم"],
+                  lambda: say(random.choice(_JOKES))))
+        C(Command("FLIP_COIN", ["شیر یا خط", "سکه بنداز", "پرتاب سکه"],
+                  lambda: say(f"{random.choice(['شیر', 'خط'])} اومد {T}.")))
+        C(Command("DICE", ["تاس بنداز", "یه عدد شانسی بگو"],
+                  lambda: say(f"{random.randint(1, 6)} {T}.")))
 
         C(Command("OPEN_GOOGLE", ["گوگل رو باز کن", "گوگل باز کن"],
                   A.make_url_action("https://www.google.com", "گوگل", T)))
@@ -268,3 +293,16 @@ class CommandEngine:
 
 CONFIRM_YES = ["بله", "اره", "تایید", "انجامش بده", "درسته", "حتما"]
 CONFIRM_NO = ["نه", "لغو", "بی خیال", "نمی خواد", "کنسل"]
+
+_WEEKDAYS = ["دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه", "شنبه", "یکشنبه"]
+_JOKES = [
+    "چرا کامپیوتر سرما خورد؟ چون پنجره‌هاش باز مونده بود.",
+    "به الگوریتم گفتن چرا ناراحتی؟ گفت همه‌ش دارن روم شرط می‌ذارن.",
+    "یه بایت به یه بیت گفت خسته‌ای؟ گفت آره، یه کم بیت‌حالم.",
+]
+
+
+def _date_line(title: str) -> str:
+    import datetime as _dt
+    now = _dt.datetime.now()
+    return f"امروز {_WEEKDAYS[now.weekday()]}، {now.day} {now.strftime('%B')} {now.year} است {title}."

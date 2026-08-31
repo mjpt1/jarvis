@@ -27,6 +27,7 @@ class Config:
     # --- عمومی ---
     voice: str = "fa-IR-FaridNeural"
     user_title: str = "قربان"                       # نحوه‌ی خطاب کاربر
+    author: str = "محسن جباره اصل"                   # برنامه‌نویس — روی HUD نمایش داده می‌شود
     website_url: str = "https://example.com"
     music_dir: str = os.path.join(os.path.expanduser("~"), "Music")
     news_rss_url: str = "https://feeds.bbci.co.uk/persian/rss.xml"
@@ -36,6 +37,14 @@ class Config:
     fps: int = 60
     show_debug_on_start: bool = False
     windowed_size: tuple[int, int] = (1100, 760)
+    orb_points: int = 1400                          # تعداد نقاطِ کره‌ی اکولایزری
+    orb_bands: int = 48                             # تعداد باندهای اکولایزر
+
+    # --- مکان دوم (مونکتون، نیوبرانزویک، کانادا) ---
+    secondary_city: str = "مونکتون"
+    secondary_lat: float = 46.0878
+    secondary_lon: float = -64.7782
+    secondary_tz: str = "America/Moncton"
 
     # --- دوربین ---
     camera_index: int = 0

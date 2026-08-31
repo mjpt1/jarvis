@@ -110,6 +110,29 @@ def weather_panel(screen, x, y, fonts):
         blit(screen, fonts.fa_small, loc, theme.CYAN_DIM, (x, y + 26), anchor="topright")
 
 
+def secondary_panel(screen, x, y, fonts, tz_name: str):
+    """ساعت و دمای مکان دوم (مونکتون، نیوبرانزویک)."""
+    with STATE.lock:
+        temp, name = STATE.secondary_temp, STATE.secondary_name
+    try:
+        from zoneinfo import ZoneInfo
+        now = datetime.datetime.now(ZoneInfo(tz_name))
+        tstr = now.strftime("%H:%M")
+    except Exception:
+        tstr = "--:--"
+    label = name or "مونکتون"
+    blit(screen, fonts.fa_small, label, theme.CYAN_DIM, (x, y), anchor="topright")
+    line = f"{tstr}" + (f"   {temp:.0f} C" if temp is not None else "")
+    blit(screen, fonts.num, line, theme.CYAN, (x, y + 18), anchor="topright", shaped=False)
+
+
+def author_credit(screen, w, h, fonts, author: str):
+    if not author:
+        return
+    blit(screen, fonts.fa_small, f"طراحی و توسعه: {author}", theme.CYAN_FAINT,
+         (w - 16, h - 20), anchor="bottomright")
+
+
 def log_panel(screen, x, y, fonts):
     with STATE.lock:
         entries = list(STATE.event_log)[-6:]

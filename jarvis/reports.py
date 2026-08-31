@@ -17,11 +17,16 @@ YAW_MAX = 8
 
 _T = "قربان"  # با configure جایگزین می‌شود
 _NEWS_URL = "https://feeds.bbci.co.uk/persian/rss.xml"
+_AUTHOR = "محسن جباره اصل"
+_SEC_CITY = "مونکتون"
+_SEC_TZ = "America/Moncton"
 
 
-def configure(title: str, news_url: str) -> None:
-    global _T, _NEWS_URL
+def configure(title: str, news_url: str, *, author: str = _AUTHOR,
+              secondary_city: str = _SEC_CITY, secondary_tz: str = _SEC_TZ) -> None:
+    global _T, _NEWS_URL, _AUTHOR, _SEC_CITY, _SEC_TZ
     _T, _NEWS_URL = title, news_url
+    _AUTHOR, _SEC_CITY, _SEC_TZ = author, secondary_city, secondary_tz
 
 
 def status() -> str:
@@ -65,6 +70,27 @@ def weather() -> str:
         return f"{_T}، هنوز به اطلاعات آب‌وهوا دسترسی پیدا نکردم."
     loc_part = f" در {loc}" if loc else ""
     return f"دمای هوا{loc_part} الان {temp:.0f} درجه‌ست {_T}."
+
+
+def author() -> str:
+    return f"من رو {_AUTHOR} طراحی و برنامه‌نویسی کرده {_T}."
+
+
+def secondary_clock() -> str:
+    try:
+        from zoneinfo import ZoneInfo
+        now = datetime.datetime.now(ZoneInfo(_SEC_TZ))
+        return f"ساعت {_SEC_CITY} الان {now.hour} و {now.minute} دقیقه‌ست {_T}."
+    except Exception:
+        return f"{_T}، الان به ساعت {_SEC_CITY} دسترسی ندارم."
+
+
+def secondary_weather() -> str:
+    with STATE.lock:
+        temp = STATE.secondary_temp
+    if temp is None:
+        return f"{_T}، هنوز دمای {_SEC_CITY} رو دریافت نکردم."
+    return f"دمای هوای {_SEC_CITY} الان {temp:.0f} درجه‌ست {_T}."
 
 
 def news() -> str:
