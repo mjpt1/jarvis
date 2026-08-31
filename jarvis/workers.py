@@ -1,0 +1,75 @@
+"""تردهای پس‌زمینه: آمار سیستم و آب‌وهوا."""
+
+from __future__ import annotations
+
+import json
+import time
+import urllib.request
+
+from .config import Config
+from .logging_setup import get_logger
+from .state import STATE
+
+log = get_logger("workers")
+
+
+def system_stats_worker(cfg: Config) -> None:
+    try:
+        import psutil
+    except Exception as exc:
+        log.warning("psutil در دسترس نیست — آمار سیستم غیرفعال: %s", exc)
+        return
+
+    last_net = None
+    last_t = time.time()
+    while STATE.running:
+        try:
+            cpu = psutil.cpu_percent(interval=cfg.system_stats_interval)
+            ram = psutil.virtual_memory().percent
+            batt = None
+            try:
+                b = psutil.sensors_battery()
+                batt = b.percent if b is not None else None
+            except Exception:
+                pass
+
+            now_net = psutil.net_io_counters()
+            now_t = time.time()
+            recv_kbps = 0.0
+            if last_net is not None:
+                dt = max(0.001, now_t - last_t)
+                recv_kbps = max(0.0, (now_net.bytes_recv - last_net.bytes_recv) / 1024.0 / dt)
+            last_net, last_t = now_net, now_t
+
+            with STATE.lock:
+                STATE.cpu_percent = cpu
+                STATE.ram_percent = ram
+                STATE.battery_percent = batt
+                STATE.net_history.append(recv_kbps)
+                del STATE.net_history[:-40]
+        except Exception as exc:
+            log.debug("خطای آمار سیستم: %s", exc)
+            time.sleep(cfg.system_stats_interval)
+
+
+def weather_worker(cfg: Config) -> None:
+    ua = {"User-Agent": "Mozilla/5.0"}
+    while STATE.running:
+        try:
+            req = urllib.request.Request("http://ip-api.com/json/", headers=ua)
+            with urllib.request.urlopen(req, timeout=5) as r:
+                loc = json.loads(r.read().decode())
+            lat, lon, city = loc.get("lat"), loc.get("lon"), loc.get("city", "")
+            if lat is not None and lon is not None:
+                url = (f"https://api.open-meteo.com/v1/forecast?latitude={lat}"
+                       f"&longitude={lon}&current_weather=true")
+                with urllib.request.urlopen(urllib.request.Request(url, headers=ua),
+                                            timeout=5) as r2:
+                    cw = json.loads(r2.read().decode()).get("current_weather", {})
+                with STATE.lock:
+                    STATE.weather_temp = cw.get("temperature")
+                    STATE.location_name = city
+        except Exception as exc:
+            log.debug("آب‌وهوا در دسترس نیست: %s", exc)
+        if STATE.stop_event.wait(cfg.weather_update_interval):
+            break

@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jarvis-companion"
+version = "8.0.0"
+description = "J.A.R.V.I.S. Companion — Stark-style voice + face HUD (Persian)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pygame>=2.5",
+    "edge-tts>=6.1",
+    "numpy>=1.24",
+    "opencv-python>=4.8",
+    "mediapipe>=0.10",
+    "sounddevice>=0.4",
+    "vosk>=0.3.45",
+    "psutil>=5.9",
+    "arabic-reshaper>=3.0",
+    "python-bidi>=0.4",
+    "pillow>=10.0",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+win = ["pycaw>=20240210", "comtypes>=1.2"]
+dev = ["pytest>=7"]
+
+[project.scripts]
+jarvis = "jarvis.__main__:main"
+
+[tool.setuptools]
+packages = ["jarvis", "jarvis.hud"]
+
+[tool.setuptools.package-data]
+jarvis = ["assets/fonts/*.ttf"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

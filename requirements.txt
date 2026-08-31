@@ -1,0 +1,29 @@
+# --- هسته (لازم) ---
+pygame>=2.5
+edge-tts>=6.1
+numpy>=1.24
+
+# --- دوربین / تشخیص چهره ---
+opencv-python>=4.8
+mediapipe>=0.10
+
+# --- تشخیص گفتار آفلاین ---
+sounddevice>=0.4
+vosk>=0.3.45
+
+# --- آمار سیستم ---
+psutil>=5.9
+
+# --- زیرنویس فارسی بهتر ---
+arabic-reshaper>=3.0
+python-bidi>=0.4
+
+# --- اسکرین‌شات ---
+pillow>=10.0
+
+# --- پیکربندی از .env (اختیاری) ---
+python-dotenv>=1.0
+
+# --- فقط ویندوز: کنترل صدای سیستم (اختیاری) ---
+pycaw>=20240210 ; sys_platform == "win32"
+comtypes>=1.2 ; sys_platform == "win32"

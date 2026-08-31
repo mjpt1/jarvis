@@ -1,0 +1,39 @@
+{
+  "voice": "fa-IR-FaridNeural",
+  "user_title": "قربان",
+  "website_url": "https://example.com",
+  "music_dir": "C:\\Users\\YOU\\Music",
+  "news_rss_url": "https://feeds.bbci.co.uk/persian/rss.xml",
+
+  "fullscreen": true,
+  "fps": 60,
+  "show_debug_on_start": false,
+  "windowed_size": [1100, 760],
+
+  "camera_index": 0,
+  "enable_camera": true,
+
+  "enable_voice": true,
+  "vosk_model_name": "vosk-model-small-fa-0.42",
+  "sample_rate": 16000,
+  "wake_words": ["جارویس", "جارویز", "جاروی", "جاروس", "جارویش", "جاریس"],
+  "fuzzy_threshold": 0.78,
+
+  "weather_update_interval": 600,
+  "system_stats_interval": 2.0,
+  "confirm_timeout": 8.0,
+  "command_timeout": 6.0,
+
+  "anthropic_api_key": "",
+  "anthropic_model": "claude-haiku-4-5-20251001",
+  "chat_history_max_turns": 6,
+  "claude_can_run_actions": true,
+
+  "folder_aliases": {
+    "دسکتاپ": "C:\\Users\\YOU\\Desktop",
+    "دانلود": "C:\\Users\\YOU\\Downloads",
+    "اسناد": "C:\\Users\\YOU\\Documents",
+    "تصاویر": "C:\\Users\\YOU\\Pictures",
+    "درایو d": "D:\\"
+  }
+}
