@@ -59,6 +59,15 @@ class Config:
     ])
     fuzzy_threshold: float = 0.78          # آستانه‌ی تطبیق فازی دستورها
 
+    # حالت مکالمه‌ی پیوسته: یک بار «جارویس» بگو، بعد همیشه منتظر دستور بماند
+    conversation_mode: bool = True
+    conversation_idle_timeout: float = 0.0   # ثانیه سکوت تا خواب خودکار؛ 0 = هرگز
+    nag_on_unknown: bool = False              # در حالت مکالمه، جمله‌ی نامفهوم را نادیده بگیر
+    sleep_phrases: list[str] = field(default_factory=lambda: [
+        "بسه", "کافیه", "دیگه گوش نده", "دیگه گوش نکن", "استراحت کن",
+        "بخواب", "فعلا کاری ندارم", "مرخصی", "خاموش شو گوش",
+    ])
+
     # --- بازه‌ها ---
     weather_update_interval: int = 600
     system_stats_interval: float = 2.0

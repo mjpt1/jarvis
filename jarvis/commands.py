@@ -148,6 +148,10 @@ class CommandEngine:
                   lambda: self.request_confirm("sleep",
                           f"{T}، سیستم رو بخوابونم؟ بگید بله یا نه.")))
 
+        C(Command("CONVO_ON", ["همیشه گوش بده", "حالت مکالمه", "همش گوش بده",
+                               "دیگه صدات نمی‌کنم", "گوش بده بهم"], self._convo_on))
+        C(Command("CONVO_OFF", ["دیگه گوش نده", "از حالت مکالمه خارج شو",
+                                "گوش نکن دیگه"], self._convo_off))
         C(Command("MUTE_EVENTS", ["ساکت شو", "ساکت باش", "بی صدا شو"], self._mute_events))
         C(Command("UNMUTE_EVENTS", ["فعال شو", "دوباره حرف بزن", "صدا رو بیار"], self._unmute_events))
         C(Command("QUIT", ["برنامه رو ببند", "جارویس رو ببند", "خروج از برنامه", "خودت رو ببند"],
@@ -180,6 +184,18 @@ class CommandEngine:
                                       lambda q="": system_actions.google_search(q, self.title))
 
     # ------------------------------------------------------------------
+    def _convo_on(self):
+        with STATE.lock:
+            STATE.conversation_active = True
+            STATE.awaiting_command = True
+        tts.say(f"باشه {self.title}، تا وقتی نگید «بسه» منتظر دستورهاتون می‌مونم.")
+
+    def _convo_off(self):
+        with STATE.lock:
+            STATE.conversation_active = False
+            STATE.awaiting_command = False
+        tts.say(f"باشه {self.title}، هر وقت کارم داشتید صدام کنید.")
+
     def _mute_events(self):
         with STATE.lock:
             STATE.audio_muted = True

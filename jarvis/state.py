@@ -19,6 +19,7 @@ class SharedState:
     cache_progress: tuple[int, int] = (0, 1)
     audio_muted: bool = False
     awaiting_command: bool = False
+    conversation_active: bool = False   # حالت مکالمه‌ی پیوسته فعال است
     last_heard_text: str = ""
     partial_text: str = ""
     mic_level: float = 0.0          # 0..1 دامنه‌ی صدای کاربر

@@ -42,6 +42,15 @@ def test_moncton_commands(engine):
     assert engine.match("هوای مونکتون چطوره").name == "SEC_WEATHER"
 
 
+def test_conversation_toggle_commands(engine, monkeypatch):
+    from jarvis.state import STATE
+    monkeypatch.setattr("jarvis.commands.tts.say", lambda *a, **k: None)
+    engine.match("حالت مکالمه").handler()
+    assert STATE.conversation_active is True
+    engine.match("از حالت مکالمه خارج شو").handler()
+    assert STATE.conversation_active is False
+
+
 def test_author_report_mentions_name():
     from jarvis import reports
     reports.configure("قربان", "http://x", author="محسن جباره اصل")

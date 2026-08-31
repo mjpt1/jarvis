@@ -26,6 +26,10 @@
   "sample_rate": 16000,
   "wake_words": ["جارویس", "جارویز", "جاروی", "جاروس", "جارویش", "جاریس"],
   "fuzzy_threshold": 0.78,
+  "conversation_mode": true,
+  "conversation_idle_timeout": 0,
+  "nag_on_unknown": false,
+  "sleep_phrases": ["بسه", "کافیه", "دیگه گوش نده", "استراحت کن", "بخواب", "مرخصی"],
 
   "weather_update_interval": 600,
   "system_stats_interval": 2.0,

@@ -74,6 +74,7 @@ def mic_meter(screen, x, y, w_box, h_box, fonts):
         level = STATE.mic_level
         voice_on = STATE.voice_enabled
         awaiting = STATE.awaiting_command
+        convo = STATE.conversation_active
     blit(screen, fonts.fa_small, "میکروفون", theme.CYAN_DIM, (x, y - 18))
     pygame.draw.rect(screen, theme.GAUGE_BG, (x, y, w_box, h_box), width=1)
     if not voice_on:
@@ -86,7 +87,10 @@ def mic_meter(screen, x, y, w_box, h_box, fonts):
         c = theme.OK if i < bars * 0.6 else theme.WARN
         col = c if i < lit else theme.GAUGE_BG
         pygame.draw.rect(screen, col, (x + i * bw + 1, y + 2, bw - 2, h_box - 4))
-    if awaiting:
+    if convo:
+        blit(screen, fonts.fa_small, "حالت مکالمه — بگویید «بسه» تا تمام شود",
+             theme.OK, (x, y + h_box + 4))
+    elif awaiting:
         blit(screen, fonts.fa_small, "منتظر دستور…", theme.OK, (x, y + h_box + 4))
 
 

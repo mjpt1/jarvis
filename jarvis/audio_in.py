@@ -87,7 +87,20 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
         STATE.voice_enabled = True
     log.info("تشخیص گفتار فعال شد — کلمه‌ی بیدارباش: %s", cfg.wake_words[0])
 
-    awaiting_since = None
+    awaiting_since = None          # مهلت کوتاهِ «یک دستور» (حالت غیرمکالمه)
+    convo = False                  # حالت مکالمه‌ی پیوسته
+    last_activity = time.time()
+
+    def _set_listen(flag: bool):
+        with STATE.lock:
+            STATE.awaiting_command = flag
+
+    def _set_convo(flag: bool):
+        nonlocal convo
+        convo = flag
+        with STATE.lock:
+            STATE.conversation_active = flag
+            STATE.awaiting_command = flag
 
     def _drain():
         while not audio_q.empty():
@@ -100,6 +113,9 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
         while STATE.running:
             with STATE.lock:
                 speaking = STATE.speaking
+                convo_ext = STATE.conversation_active
+            if convo_ext != convo:          # یک دستور، حالت مکالمه را عوض کرده
+                convo = convo_ext
             if speaking:
                 _drain()
                 time.sleep(0.1)
@@ -111,8 +127,14 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
                 _expire_confirm(cfg)
                 if awaiting_since and time.time() - awaiting_since > cfg.command_timeout:
                     awaiting_since = None
-                    with STATE.lock:
-                        STATE.awaiting_command = False
+                    if not convo:
+                        _set_listen(False)
+                # خوابِ خودکارِ حالت مکالمه پس از سکوتِ طولانی (اگر تنظیم شده باشد)
+                if (convo and cfg.conversation_idle_timeout > 0
+                        and time.time() - last_activity > cfg.conversation_idle_timeout):
+                    _set_convo(False)
+                    tts.say(f"{cfg.user_title}، چون مدتی ساکت بودید می‌رم استراحت. "
+                            f"هر وقت کارم داشتید صدام کنید.")
                 continue
 
             with STATE.lock:
@@ -152,26 +174,47 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
                     _drain()
                     continue
 
-            # ۲) کلمه‌ی بیدارباش یا ادامه‌ی دستور
+            # ۲) عبارتِ «بسه/کافیه» -> خروج از حالت مکالمه
+            norm = normalize(text)
+            if convo and any(fuzzy_contains(norm, p, 0.82) for p in cfg.sleep_phrases):
+                _set_convo(False)
+                awaiting_since = None
+                tts.say(f"باشه {cfg.user_title}، هر وقت کارم داشتید صدام کنید.")
+                _drain()
+                continue
+
+            # ۳) کلمه‌ی بیدارباش یا ادامه‌ی دستور
             has_wake, after = _contains_wake(text, cfg.wake_words)
             import random
+            last_activity = time.time()
+
             if has_wake:
                 if after:
-                    awaiting_since = None
-                    with STATE.lock:
-                        STATE.awaiting_command = False
-                    if not engine.handle(after):
+                    if not engine.handle(after) and not convo:
                         tts.say_cached_only(random.choice(engine.wake_ack))
                 else:
                     tts.say_cached_only(random.choice(engine.wake_ack))
+                # پس از نخستین صدا زدن، وارد حالت مکالمه‌ی پیوسته می‌شویم
+                if cfg.conversation_mode:
+                    if not convo:
+                        _set_convo(True)
+                        if not after:
+                            tts.say(f"در خدمتم {cfg.user_title}، تا وقتی نگید «بسه» "
+                                    f"منتظر دستورهاتون می‌مونم.")
+                else:
                     awaiting_since = time.time()
-                    with STATE.lock:
-                        STATE.awaiting_command = True
+                    _set_listen(True)
                 _drain()
+
+            elif convo:
+                # در حالت مکالمه هر جمله مستقیماً دستور تلقی می‌شود
+                if not engine.handle(text) and cfg.nag_on_unknown:
+                    tts.say(random.choice(engine.unknown_lines))
+                _drain()
+
             elif awaiting_since and time.time() - awaiting_since < cfg.command_timeout:
                 awaiting_since = None
-                with STATE.lock:
-                    STATE.awaiting_command = False
+                _set_listen(False)
                 if not engine.handle(text):
                     tts.say(random.choice(engine.unknown_lines))
                 _drain()
