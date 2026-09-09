@@ -33,17 +33,27 @@ def _rms_level(pcm_bytes: bytes) -> float:
     return min(1.0, math.sqrt(mean_sq) / 8000.0)
 
 
-def _contains_wake(text: str, wake_words) -> tuple[bool, str]:
+def _contains_wake(text: str, wake_words, fuzzy: float = 0.62) -> tuple[bool, str]:
     norm = normalize(text)
+    if not norm:
+        return False, ""
     for w in wake_words:
         wn = normalize(w)
         idx = norm.find(wn)
         if idx != -1:
             return True, norm[idx + len(wn):].strip()
-    # فازی برای تک‌کلمه
-    if any(fuzzy_contains(norm, w, 0.8) for w in wake_words):
-        return True, ""
+    # تطبیقِ نرم روی هر توکن (مدل کوچک اسم را دقیق نمی‌شنود)
+    toks = norm.split()
+    wnorm = [normalize(w) for w in wake_words]
+    for i, tok in enumerate(toks):
+        if any(_ratio(tok, wn) >= fuzzy for wn in wnorm):
+            return True, " ".join(toks[i + 1:]).strip()
     return False, ""
+
+
+def _ratio(a: str, b: str) -> float:
+    import difflib
+    return difflib.SequenceMatcher(None, a, b).ratio()
 
 
 def voice_worker(cfg: Config, engine: CommandEngine) -> None:
@@ -76,6 +86,23 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
     recognizer = vosk.KaldiRecognizer(model, cfg.sample_rate)
     recognizer.SetWords(False)
 
+    # شناسگرِ محدود فقط برای کلمه‌ی بیدارباش — دقتِ صدا زدن را بالا می‌برد
+    wake_rec = None
+    try:
+        grammar = json.dumps(sorted(set(w for w in cfg.wake_grammar_words if w))
+                             + ["[unk]"], ensure_ascii=False)
+        wake_rec = vosk.KaldiRecognizer(model, cfg.sample_rate, grammar)
+        wake_rec.SetWords(False)
+        log.info("شناسگرِ بیدارباش با گرامر: %s", grammar)
+    except Exception as exc:
+        log.warning("شناسگرِ محدودِ بیدارباش ساخته نشد (از حالت عادی استفاده می‌شود): %s", exc)
+
+    try:
+        default_in = sd.query_devices(kind="input")
+        log.info("میکروفون پیش‌فرض: %s", default_in.get("name", "?"))
+    except Exception as exc:
+        log.warning("میکروفونِ ورودی پیدا نشد: %s", exc)
+
     try:
         stream = sd.RawInputStream(samplerate=cfg.sample_rate, blocksize=8000,
                                    dtype="int16", channels=1, callback=_cb)
@@ -86,6 +113,9 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
     with STATE.lock:
         STATE.voice_enabled = True
     log.info("تشخیص گفتار فعال شد — کلمه‌ی بیدارباش: %s", cfg.wake_words[0])
+
+    _last_dbg = [0.0, 0.0]   # [آخرین لاگِ partial, بیشینه‌ی سطح صدا از آخرین لاگ]
+    peak = 0.0               # بیشینه‌ی نرمِ اخیرِ سطح صدا (برای فیلترِ نویزِ دور)
 
     awaiting_since = None          # مهلت کوتاهِ «یک دستور» (حالت غیرمکالمه)
     convo = False                  # حالت مکالمه‌ی پیوسته
@@ -137,13 +167,47 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
                             f"هر وقت کارم داشتید صدام کنید.")
                 continue
 
+            lvl = _rms_level(data)
+            peak = max(lvl, peak * 0.85)
             with STATE.lock:
-                STATE.mic_level = _rms_level(data)
+                STATE.mic_level = lvl
+            _last_dbg[1] = max(_last_dbg[1], lvl)
+
+            # --- شناسگرِ محدودِ بیدارباش (فقط وقتی هنوز فعال نیستیم) ---
+            if (wake_rec is not None and not convo and awaiting_since is None
+                    and peak >= cfg.wake_min_level):
+                if wake_rec.AcceptWaveform(data):
+                    wtext = json.loads(wake_rec.Result()).get("text", "")
+                else:
+                    wtext = json.loads(wake_rec.PartialResult()).get("partial", "")
+                wtext = wtext.replace("[unk]", "").strip()
+                if wtext:
+                    wk, _after = _contains_wake(
+                        wtext, cfg.wake_words + cfg.wake_grammar_words, cfg.wake_fuzzy)
+                    if wk:
+                        log.info("بیدارباش (گرامر): %r  سطح≈%.2f", wtext, _last_dbg[1])
+                        recognizer.Reset()
+                        wake_rec.Reset()
+                        _drain()
+                        import random as _r
+                        tts.say_cached_only(_r.choice(engine.wake_ack))
+                        if cfg.conversation_mode:
+                            _set_convo(True)
+                            tts.say(f"در خدمتم {cfg.user_title}، تا وقتی نگید «بسه» "
+                                    f"منتظر دستورهاتون می‌مونم.")
+                        else:
+                            awaiting_since = time.time()
+                            _set_listen(True)
+                        continue
 
             if not recognizer.AcceptWaveform(data):
                 partial = json.loads(recognizer.PartialResult()).get("partial", "")
                 with STATE.lock:
                     STATE.partial_text = partial
+                now = time.time()
+                if now - _last_dbg[0] > 3.0:
+                    log.info("صدا: سطح≈%.2f  partial=%r", _last_dbg[1], partial)
+                    _last_dbg[0], _last_dbg[1] = now, 0.0
                 continue
 
             with STATE.lock:
@@ -151,6 +215,7 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
             text = json.loads(recognizer.Result()).get("text", "").strip()
             if not text:
                 continue
+            log.info("شنیده شد: %r  (convo=%s)", text, convo)
             with STATE.lock:
                 STATE.last_heard_text = text
 
@@ -174,9 +239,13 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
                     _drain()
                     continue
 
-            # ۲) عبارتِ «بسه/کافیه» -> خروج از حالت مکالمه
+            # ۲) عبارتِ «بسه/کافیه/تمام» -> خروج از حالت مکالمه
             norm = normalize(text)
-            if convo and any(fuzzy_contains(norm, p, 0.82) for p in cfg.sleep_phrases):
+            n_tokens = norm.split()
+            exact_stop = any(tok in cfg.sleep_exact_tokens for tok in n_tokens)
+            phrase_stop = any(fuzzy_contains(norm, p, 0.8) for p in cfg.sleep_phrases)
+            if convo and (exact_stop or phrase_stop):
+                log.info("خروج از حالت مکالمه با: %r", text)
                 _set_convo(False)
                 awaiting_since = None
                 tts.say(f"باشه {cfg.user_title}، هر وقت کارم داشتید صدام کنید.")
@@ -184,7 +253,7 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
                 continue
 
             # ۳) کلمه‌ی بیدارباش یا ادامه‌ی دستور
-            has_wake, after = _contains_wake(text, cfg.wake_words)
+            has_wake, after = _contains_wake(text, cfg.wake_words, cfg.wake_fuzzy)
             import random
             last_activity = time.time()
 
@@ -208,7 +277,9 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
 
             elif convo:
                 # در حالت مکالمه هر جمله مستقیماً دستور تلقی می‌شود
-                if not engine.handle(text) and cfg.nag_on_unknown:
+                ok = engine.handle(text)
+                log.info("  اجرا در حالت مکالمه: %r -> %s", text, ok)
+                if not ok and cfg.nag_on_unknown:
                     tts.say(random.choice(engine.unknown_lines))
                 _drain()
 
