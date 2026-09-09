@@ -36,6 +36,14 @@
   "confirm_timeout": 8.0,
   "command_timeout": 6.0,
 
+  "memory_enabled": true,
+  "memory_recall_limit": 6,
+  "nightly_consolidation_hour": 4,
+
+  "mission_enabled": true,
+  "mission_max_steps": 8,
+  "mission_autoconfirm": false,
+
   "anthropic_api_key": "",
   "anthropic_model": "claude-haiku-4-5-20251001",
   "chat_history_max_turns": 6,

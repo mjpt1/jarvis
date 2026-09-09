@@ -69,7 +69,7 @@ def _tools_schema():
     }]
 
 
-def _post(payload: dict) -> dict | None:
+def _post(payload: dict, timeout: int = 20) -> dict | None:
     body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(_API_URL, data=body, headers={
         "content-type": "application/json",
@@ -77,11 +77,36 @@ def _post(payload: dict) -> dict | None:
         "anthropic-version": "2023-06-01",
     })
     try:
-        with urllib.request.urlopen(req, timeout=20) as r:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read().decode())
     except Exception as exc:  # pragma: no cover - شبکه
         log.warning("تماس با Claude ناموفق بود: %s", exc)
         return None
+
+
+def _text_of(data: dict | None) -> str:
+    if not data:
+        return ""
+    return "".join(b.get("text", "") for b in data.get("content", [])
+                   if b.get("type") == "text").strip()
+
+
+def model_name() -> str:
+    return _MODEL
+
+
+def oneshot(system: str, user: str, *, max_tokens: int = 600,
+            model: str | None = None, timeout: int = 30) -> str | None:
+    """یک درخواستِ بدون‌حالت به Claude (بدون حافظه‌ی مکالمه، بدون ابزار)."""
+    if not _KEY:
+        return None
+    data = _post({
+        "model": model or _MODEL,
+        "max_tokens": max_tokens,
+        "system": system,
+        "messages": [{"role": "user", "content": user}],
+    }, timeout=timeout)
+    return _text_of(data) or None
 
 
 def ask(user_text: str) -> str | None:
@@ -91,11 +116,20 @@ def ask(user_text: str) -> str | None:
     with STATE.lock:
         history = list(STATE.chat_history)
 
+    system = _system_prompt()
+    try:
+        from .memory.curator import recall_context
+        mem = recall_context(user_text)
+        if mem:
+            system += "\n\n" + mem
+    except Exception as exc:  # pragma: no cover
+        log.debug("بازیابی حافظه ناموفق بود: %s", exc)
+
     messages = history + [{"role": "user", "content": user_text}]
     payload = {
         "model": _MODEL,
         "max_tokens": 400,
-        "system": _system_prompt(),
+        "system": system,
         "messages": messages,
     }
     tools = _tools_schema()

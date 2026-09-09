@@ -52,6 +52,32 @@ def system_stats_worker(cfg: Config) -> None:
             time.sleep(cfg.system_stats_interval)
 
 
+def nightly_consolidation_worker(cfg: Config) -> None:
+    """هر شب در ساعتِ تعیین‌شده، حقایقِ جامانده از مکالمه‌ها را استخراج و ذخیره می‌کند."""
+    import datetime as _dt
+
+    while STATE.running:
+        now = _dt.datetime.now()
+        target = now.replace(hour=cfg.nightly_consolidation_hour, minute=0,
+                             second=0, microsecond=0)
+        if target <= now:
+            target += _dt.timedelta(days=1)
+        wait_s = (target - now).total_seconds()
+        if STATE.stop_event.wait(wait_s):
+            return
+        try:
+            with STATE.lock:
+                turns = list(STATE.chat_history)
+            from .memory.curator import extract_from_turns
+            from .memory import markdown_mirror
+            from .memory.store import get_store
+            n = extract_from_turns(turns)
+            markdown_mirror.rebuild(get_store())
+            log.info("نگهداریِ شبانه: %d حقیقتِ تازه.", n)
+        except Exception as exc:
+            log.warning("نگهداریِ شبانه ناموفق بود: %s", exc)
+
+
 def _current_temp(lat, lon, ua) -> float | None:
     url = (f"https://api.open-meteo.com/v1/forecast?latitude={lat}"
            f"&longitude={lon}&current_weather=true")

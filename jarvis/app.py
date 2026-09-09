@@ -55,6 +55,10 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
 
     engine = CommandEngine(cfg)
 
+    if cfg.mission_enabled:
+        from .missions.engine import attach as _attach_missions
+        _attach_missions(engine)
+
     pygame.init()
     pygame.mixer.pre_init(44100, -16, 2, 512)
     pygame.mixer.init()
@@ -85,6 +89,21 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
         threading.Thread(target=voice_worker, args=(cfg, engine), daemon=True).start()
     threading.Thread(target=system_stats_worker, args=(cfg,), daemon=True).start()
     threading.Thread(target=weather_worker, args=(cfg,), daemon=True).start()
+
+    if cfg.memory_enabled and cfg.nightly_consolidation_hour:
+        from .workers import nightly_consolidation_worker
+        threading.Thread(target=nightly_consolidation_worker, args=(cfg,), daemon=True).start()
+
+    if cfg.mission_enabled:
+        def _resume():
+            time.sleep(6)
+            try:
+                from .missions.engine import _ENGINE
+                if _ENGINE:
+                    _ENGINE.resume_unfinished()
+            except Exception as exc:      # pragma: no cover
+                log.debug("ادامه‌ی مأموریت ناتمام ناموفق: %s", exc)
+        threading.Thread(target=_resume, daemon=True).start()
 
     show_debug = cfg.show_debug_on_start
     start = time.time()
@@ -129,6 +148,8 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
         widgets.system_gauges(screen, int(120 * scale), int(110 * scale), fonts)
         widgets.network_sparkline(screen, 24, int(210 * scale), 220, 46, fonts)
         widgets.mic_meter(screen, 24, int(300 * scale), 220, 26, fonts)
+        if cfg.memory_enabled:
+            widgets.memory_panel(screen, 24, int(372 * scale), fonts)
         widgets.clock_panel(screen, w // 2, 26, fonts)
         widgets.weather_panel(screen, w - 40, 28, fonts)
         widgets.secondary_panel(screen, w - 40, int(96 * scale), fonts, cfg.secondary_tz)

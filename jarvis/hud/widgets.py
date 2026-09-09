@@ -114,6 +114,27 @@ def weather_panel(screen, x, y, fonts):
         blit(screen, fonts.fa_small, loc, theme.CYAN_DIM, (x, y + 26), anchor="topright")
 
 
+_mem_cache = {"t": 0.0, "n": None}
+
+
+def memory_panel(screen, x, y, fonts):
+    """شمارِ حقایقِ حافظه + نشانگرِ مأموریتِ در حال اجرا (کمینه، با کش)."""
+    import time as _t
+    if _t.time() - _mem_cache["t"] > 5.0:
+        _mem_cache["t"] = _t.time()
+        try:
+            from ..memory.store import get_store
+            _mem_cache["n"] = get_store().stats()["active"]
+        except Exception:
+            _mem_cache["n"] = None
+    n = _mem_cache["n"]
+    if n is None:
+        return
+    blit(screen, fonts.fa_small, "حافظه", theme.CYAN_DIM, (x, y - 18))
+    blit(screen, fonts.num, str(n), theme.CYAN, (x, y), shaped=False)
+    blit(screen, fonts.fa_small, "حقیقت", theme.CYAN_FAINT, (x + 4, y + 22))
+
+
 def secondary_panel(screen, x, y, fonts, tz_name: str):
     """ساعت و دمای مکان دوم (مونکتون، نیوبرانزویک)."""
     with STATE.lock:

@@ -92,6 +92,16 @@ class Config:
     confirm_timeout: float = 8.0
     command_timeout: float = 6.0
 
+    # --- حافظه‌ی بلندمدت ---
+    memory_enabled: bool = True
+    memory_recall_limit: int = 6           # تعداد حقایقی که به Claude تزریق می‌شود
+    nightly_consolidation_hour: int = 4    # ساعتِ استخراجِ شبانه‌ی حقایق (۰=خاموش)
+
+    # --- موتور مأموریت (اجرای چندمرحله‌ای) ---
+    mission_enabled: bool = True
+    mission_max_steps: int = 8
+    mission_autoconfirm: bool = False      # اجرای گام‌های حساس بدون تایید صوتی
+
     # --- Claude (اختیاری) ---
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-haiku-4-5-20251001"

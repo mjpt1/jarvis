@@ -30,7 +30,8 @@ log = get_logger("commands")
 class Command:
     name: str
     keywords: list[str]
-    handler: Callable[[], None]
+    handler: Callable[..., None]
+    wants_text: bool = False        # هندلر متنِ کاملِ شنیده‌شده را می‌گیرد
 
 
 class CommandEngine:
@@ -88,6 +89,21 @@ class CommandEngine:
                                              f"کاری نکردم {T}.", f"همیشه در خدمتم {T}."]))))
         C(Command("WHO_AM_I", ["من کیم", "اسم من چیه", "من رو می‌شناسی"],
                   lambda: say(f"شما {T} هستید، کاربر اصلیِ من.")))
+
+        if self.cfg.memory_enabled:
+            C(Command("REMEMBER", ["این رو یادت باشه", "یادت باشه که", "به خاطر بسپار",
+                                   "یادداشت کن که", "به یاد داشته باش", "ذخیره کن که"],
+                      self._cmd_remember, wants_text=True))
+            C(Command("RECALL", ["چی یادته درباره", "درباره‌ش چی می‌دونی", "چی می‌دونی درباره",
+                                 "راجع بهش چی یادته", "چی یادت مونده از"],
+                      self._cmd_recall, wants_text=True))
+            C(Command("MEMORY_STATS", ["حافظه‌ت رو نشون بده", "چند تا چیز یادته",
+                                       "وضعیت حافظه", "حافظه‌ت چطوره"],
+                      self._cmd_memory_stats))
+            C(Command("MEMORY_FORGET", ["اون رو فراموش کن", "پاکش کن از حافظه",
+                                        "یادت نباشه"],
+                      lambda: say(f"{T}، برای فراموش کردن باید در فایلِ حافظه دستی "
+                                  f"بایگانی‌اش کنید؛ من چیزی رو برای همیشه پاک نمی‌کنم.")))
         C(Command("JOKE", ["یه جوک بگو", "یه چیز بامزه بگو", "بخندونم"],
                   lambda: say(random.choice(_JOKES))))
         C(Command("FLIP_COIN", ["شیر یا خط", "سکه بنداز", "پرتاب سکه"],
@@ -184,6 +200,47 @@ class CommandEngine:
                                       lambda q="": system_actions.google_search(q, self.title))
 
     # ------------------------------------------------------------------
+    # ---------------- حافظه ----------------
+    def _cmd_remember(self, text: str):
+        from .text_fa import strip_phrase
+        content = text
+        for p in ("این رو یادت باشه", "یادت باشه که", "به خاطر بسپار",
+                  "یادداشت کن که", "به یاد داشته باش", "ذخیره کن که",
+                  "این رو", "یادت باشه", "که"):
+            content = strip_phrase(content, p)
+        content = content.strip(" ،.")
+        if len(content) < 3:
+            tts.say(f"{self.title}، چی رو یادم باشه؟")
+            return
+        from .memory.curator import remember
+        remember(content, source="user")
+        tts.say(f"باشه {self.title}، یادم می‌مونه: {content}")
+
+    def _cmd_recall(self, text: str):
+        from .text_fa import normalize
+        from .memory.store import get_store
+        topic = normalize(text)
+        for p in ("چی یادته درباره", "درباره‌ش چی می‌دونی", "چی می‌دونی درباره",
+                  "راجع بهش چی یادته", "چی یادت مونده از", "درباره", "راجع به", "ی"):
+            topic = topic.replace(p, " ")
+        topic = topic.strip()
+        store = get_store()
+        hits = store.search(topic, limit=4) if topic else store.recent(4)
+        if not hits:
+            tts.say(f"{self.title}، چیزی دربارهٔ این یادم نیست.")
+            return
+        tts.say(f"{self.title}، این‌ها رو یادمه: " + "؛ ".join(f.text for f in hits))
+
+    def _cmd_memory_stats(self):
+        from .memory.store import get_store
+        st = get_store().stats()
+        if not st["active"]:
+            tts.say(f"{self.title}، هنوز چیزی تو حافظه‌م نیست.")
+            return
+        top = sorted(st["by_category"].items(), key=lambda x: -x[1])[:3]
+        parts = "، ".join(f"{n} مورد {c}" for c, n in top)
+        tts.say(f"{self.title}، {st['active']} حقیقت یادمه؛ بیشترشون: {parts}.")
+
     def _convo_on(self):
         with STATE.lock:
             STATE.conversation_active = True
@@ -294,10 +351,15 @@ class CommandEngine:
         if cmd:
             STATE.log(cmd.name)
             try:
-                cmd.handler()
+                cmd.handler(text) if cmd.wants_text else cmd.handler()
             except Exception as exc:
                 log.exception("اجرای دستور %s خطا داد: %s", cmd.name, exc)
                 tts.say(f"{self.title}، در اجرای دستور مشکلی پیش اومد.")
+            return True
+        # مأموریتِ چندمرحله‌ای؟
+        if self.cfg.mission_enabled and _looks_like_mission(text):
+            from .missions.engine import run_mission_async
+            run_mission_async(text, self)
             return True
         reply = claude_client.ask(text)
         if reply:
@@ -309,6 +371,21 @@ class CommandEngine:
 
 CONFIRM_YES = ["بله", "اره", "تایید", "انجامش بده", "درسته", "حتما"]
 CONFIRM_NO = ["نه", "لغو", "بی خیال", "نمی خواد", "کنسل"]
+
+_MISSION_HINTS = [
+    "یه کاری برام بکن", "این کارها رو انجام بده", "برام انجام بده", "مأموریت",
+    "ماموریت", "چند تا کار", "اول ", "بعدش ", "سپس ", "قدم به قدم", "مرحله به مرحله",
+    "و بعد ", "همه‌ی این", "ترتیب",
+]
+
+
+def _looks_like_mission(text: str) -> bool:
+    n = normalize(text)
+    if any(h in n for h in (normalize(x) for x in _MISSION_HINTS)):
+        return True
+    # جمله‌ی طولانی با چند فعلِ امری پشت‌سرهم
+    return len(n.split()) >= 10 and n.count(" و ") >= 2
+
 
 _WEEKDAYS = ["دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه", "شنبه", "یکشنبه"]
 _JOKES = [

@@ -12,6 +12,10 @@ APP_DIR = Path(os.environ.get("JARVIS_HOME", HOME / ".jarvis"))
 MODELS_DIR = APP_DIR / "models"
 CACHE_DIR = APP_DIR / "cache"          # کش صداهای ثابت (بین اجراها می‌ماند)
 LOG_DIR = APP_DIR / "logs"
+DATA_DIR = APP_DIR / "data"           # پایگاه‌داده‌ها (حافظه، مأموریت‌ها)
+MEMORY_DB = DATA_DIR / "memory.db"
+MISSIONS_DB = DATA_DIR / "missions.db"
+MEMORY_VAULT = APP_DIR / "memory_vault"   # آینه‌ی Markdown سازگار با Obsidian
 SCREENSHOT_DIR = HOME / "Pictures" / "JarvisScreenshots"
 
 # ریشه‌ی سورس (برای دسترسی به assets)
@@ -25,5 +29,5 @@ LOCAL_CONFIG_FILE = PACKAGE_DIR.parent / "config.json"
 
 
 def ensure_dirs() -> None:
-    for d in (APP_DIR, MODELS_DIR, CACHE_DIR, LOG_DIR):
+    for d in (APP_DIR, MODELS_DIR, CACHE_DIR, LOG_DIR, DATA_DIR, MEMORY_VAULT):
         d.mkdir(parents=True, exist_ok=True)
