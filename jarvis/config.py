@@ -39,6 +39,7 @@ class Config:
     windowed_size: tuple[int, int] = (1100, 760)
     orb_points: int = 1400                          # تعداد نقاطِ کره‌ی اکولایزری
     orb_bands: int = 48                             # تعداد باندهای اکولایزر
+    hud_command_center: bool = True                 # چیدمانِ «مرکز فرمان» (مثل داشبورد وب)
 
     # --- مکان دوم (مونکتون، نیوبرانزویک، کانادا) ---
     secondary_city: str = "مونکتون"

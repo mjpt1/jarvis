@@ -79,6 +79,8 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
     scale = min(w / 1280, h / 800)
     fonts = Fonts(scale=max(0.75, scale))
     orb = Orb((w, h), points=cfg.orb_points, bands=cfg.orb_bands)
+    from .hud.dashboard import CommandCenter
+    cc = CommandCenter() if cfg.hud_command_center else None
 
     # --- تردهای پس‌زمینه ---
     from .audio_in import voice_worker
@@ -158,29 +160,31 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
             cache_progress = STATE.cache_progress
             awaiting = STATE.awaiting_command
 
-        cx, cy = w // 2, h // 2
-        base_scale = min(w, h) * 0.30
+        if cc is not None:
+            cc.draw(screen, t, orb, cfg, fonts, speaking=speaking, awaiting=awaiting)
+            widgets.author_credit(screen, w, h, fonts, cfg.author)
+        else:
+            cx, cy = w // 2, h // 2
+            base_scale = min(w, h) * 0.30
+            screen.fill(widgets.theme.BG)
+            widgets.corner_ticks(screen, w, h, t)
+            orb.draw(screen, t, cx, cy, base_scale, speaking=speaking, listening=awaiting)
+            widgets.system_gauges(screen, int(120 * scale), int(110 * scale), fonts)
+            widgets.network_sparkline(screen, 24, int(210 * scale), 220, 46, fonts)
+            widgets.mic_meter(screen, 24, int(300 * scale), 220, 26, fonts)
+            if cfg.memory_enabled:
+                widgets.memory_panel(screen, 24, int(372 * scale), fonts)
+            widgets.clock_panel(screen, w // 2, 26, fonts)
+            widgets.weather_panel(screen, w - 40, 28, fonts)
+            widgets.secondary_panel(screen, w - 40, int(96 * scale), fonts, cfg.secondary_tz)
+            widgets.log_panel(screen, 24, h - 200, fonts)
+            widgets.status_chips(screen, 28, h - 232, fonts)
+            widgets.author_credit(screen, w, h, fonts, cfg.author)
+            widgets.subtitle_bar(screen, w, h, fonts, subtitle)
+            widgets.scanlines(screen, w, h)
 
-        screen.fill(widgets.theme.BG)
-        widgets.corner_ticks(screen, w, h, t)
-        orb.draw(screen, t, cx, cy, base_scale, speaking=speaking, listening=awaiting)
-
-        widgets.system_gauges(screen, int(120 * scale), int(110 * scale), fonts)
-        widgets.network_sparkline(screen, 24, int(210 * scale), 220, 46, fonts)
-        widgets.mic_meter(screen, 24, int(300 * scale), 220, 26, fonts)
-        if cfg.memory_enabled:
-            widgets.memory_panel(screen, 24, int(372 * scale), fonts)
-        widgets.clock_panel(screen, w // 2, 26, fonts)
-        widgets.weather_panel(screen, w - 40, 28, fonts)
-        widgets.secondary_panel(screen, w - 40, int(96 * scale), fonts, cfg.secondary_tz)
-        widgets.log_panel(screen, 24, h - 200, fonts)
-        widgets.status_chips(screen, 28, h - 232, fonts)
-        widgets.author_credit(screen, w, h, fonts, cfg.author)
-
-        widgets.subtitle_bar(screen, w, h, fonts, subtitle)
         if not cache_ready:
             widgets.loading(screen, w, h, fonts, cache_progress)
-        widgets.scanlines(screen, w, h)
         if show_debug:
             widgets.debug_hud(screen, fonts)
 
