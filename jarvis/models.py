@@ -42,7 +42,7 @@ def _set_status(text: str) -> None:
         STATE.download_status = text
 
 
-def _download(url: str, dest, attempts: int = 6, on_progress=None, label: str = "") -> None:
+def _download(url: str, dest, attempts: int = 40, on_progress=None, label: str = "") -> None:
     """دانلودِ قابلِ‌ازسرگیری: اگر فایلِ .part از قبل باشد از همان‌جا ادامه می‌دهد."""
     ensure_dirs()
     dest_tmp = str(dest) + ".part"
@@ -56,7 +56,7 @@ def _download(url: str, dest, attempts: int = 6, on_progress=None, label: str = 
             if have:
                 headers["Range"] = f"bytes={have}-"
             req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=60) as resp:
                 resuming = resp.status == 206
                 if have and not resuming:
                     have = 0                       # سرور ازسرگیری را قبول نکرد
@@ -78,7 +78,11 @@ def _download(url: str, dest, attempts: int = 6, on_progress=None, label: str = 
                                 on_progress(got, total)
             if not STATE.running:
                 raise _Aborted()
-            if not os.path.exists(dest_tmp) or os.path.getsize(dest_tmp) < 1024:
+            got_size = os.path.getsize(dest_tmp) if os.path.exists(dest_tmp) else 0
+            if total and got_size < total:
+                # سرور اتصال را زودتر بست — با ازسرگیری ادامه بده
+                raise ConnectionError(f"ناقص: {got_size}/{total}")
+            if got_size < 1024:
                 raise OSError("فایلِ دانلود ناقص است")
             os.replace(dest_tmp, dest)
             _set_status("")
@@ -88,9 +92,12 @@ def _download(url: str, dest, attempts: int = 6, on_progress=None, label: str = 
             raise
         except Exception as exc:  # pragma: no cover - شبکه
             last_exc = exc
+            if not STATE.running:
+                _set_status("")
+                raise _Aborted() from exc
             log.warning("دانلود ناموفق (تلاش %d/%d) — از سرگیری خودکار: %s", i, attempts, exc)
-            _set_status(f"{label or 'دانلود مدل'}: قطع شد، تلاش دوباره…")
-            time.sleep(min(20, 2.0 * i))
+            _set_status(f"{label or 'دانلود مدل'}: قطع شد، ادامه از همان‌جا…")
+            time.sleep(min(15, 2.0 * i))
     _set_status("")
     raise RuntimeError(f"دانلود {url} ناموفق بود: {last_exc}")
 
