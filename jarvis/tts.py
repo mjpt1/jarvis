@@ -93,6 +93,7 @@ def _play_file(path, subtitle: str) -> None:
         return
     with STATE.lock:
         STATE.current_subtitle = subtitle
+        STATE.last_reply = subtitle
         STATE.speaking = True
     _duck_music(True)
     try:

@@ -37,9 +37,9 @@ class Config:
     fps: int = 60
     show_debug_on_start: bool = False
     windowed_size: tuple[int, int] = (1100, 760)
-    orb_points: int = 1400                          # تعداد نقاطِ کره‌ی اکولایزری
+    orb_points: int = 2400                          # تعداد نقاطِ کره‌ی ذره‌ای
     orb_bands: int = 48                             # تعداد باندهای اکولایزر
-    hud_command_center: bool = True                 # چیدمانِ «مرکز فرمان» (مثل داشبورد وب)
+    hud_style: str = "minimal"                      # minimal | command | legacy
 
     # --- مکان دوم (مونکتون، نیوبرانزویک، کانادا) ---
     secondary_city: str = "مونکتون"

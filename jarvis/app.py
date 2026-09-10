@@ -79,8 +79,8 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
     scale = min(w / 1280, h / 800)
     fonts = Fonts(scale=max(0.75, scale))
     orb = Orb((w, h), points=cfg.orb_points, bands=cfg.orb_bands)
-    from .hud.dashboard import CommandCenter
-    cc = CommandCenter() if cfg.hud_command_center else None
+    hud = _make_hud(cfg.hud_style, (w, h))
+    hud_styles = ["minimal", "command", "legacy"]
 
     # --- تردهای پس‌زمینه ---
     from .audio_in import voice_worker
@@ -150,6 +150,14 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
                     w, h = screen.get_size()
                     scale = max(0.75, min(w / 1280, h / 800))
                     orb.resize((w, h))
+                    hud = _make_hud(cfg.hud_style, (w, h))
+                elif event.key == pygame.K_w:
+                    _open_dashboard(cfg)
+                elif event.key == pygame.K_TAB:
+                    cfg.hud_style = hud_styles[(hud_styles.index(cfg.hud_style) + 1)
+                                               % len(hud_styles)]
+                    hud = _make_hud(cfg.hud_style, (w, h))
+                    STATE.log(f"HUD: {cfg.hud_style}")
                 elif event.key in MANUAL_TEST_KEYS and cfg.enable_camera is not None:
                     _fire_manual(MANUAL_TEST_KEYS[event.key], cfg.user_title)
 
@@ -160,9 +168,8 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
             cache_progress = STATE.cache_progress
             awaiting = STATE.awaiting_command
 
-        if cc is not None:
-            cc.draw(screen, t, orb, cfg, fonts, speaking=speaking, awaiting=awaiting)
-            widgets.author_credit(screen, w, h, fonts, cfg.author)
+        if hasattr(hud, "draw"):
+            hud.draw(screen, t, orb, cfg, fonts, speaking=speaking, awaiting=awaiting)
         else:
             cx, cy = w // 2, h // 2
             base_scale = min(w, h) * 0.30
@@ -179,10 +186,10 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
             widgets.secondary_panel(screen, w - 40, int(96 * scale), fonts, cfg.secondary_tz)
             widgets.log_panel(screen, 24, h - 200, fonts)
             widgets.status_chips(screen, 28, h - 232, fonts)
-            widgets.author_credit(screen, w, h, fonts, cfg.author)
             widgets.subtitle_bar(screen, w, h, fonts, subtitle)
             widgets.scanlines(screen, w, h)
 
+        widgets.author_credit(screen, w, h, fonts, cfg.author)
         if not cache_ready:
             widgets.loading(screen, w, h, fonts, cache_progress)
         if show_debug:
@@ -206,6 +213,27 @@ def _make_screen(fullscreen: bool, windowed_size):
         info = pygame.display.Info()
         return pygame.display.set_mode((info.current_w, info.current_h), pygame.FULLSCREEN)
     return pygame.display.set_mode(windowed_size, pygame.RESIZABLE)
+
+
+def _make_hud(style: str, size):
+    if style == "command":
+        from .hud.dashboard import CommandCenter
+        return CommandCenter()
+    if style == "legacy":
+        return object()          # حالت قدیمی؛ در حلقه‌ی رندر مدیریت می‌شود
+    from .hud.minimal import MinimalHUD
+    return MinimalHUD(size)
+
+
+def _open_dashboard(cfg) -> None:
+    import webbrowser
+    url = f"http://{cfg.web_dashboard_host}:{cfg.web_dashboard_port}/"
+    try:
+        webbrowser.open(url)
+        STATE.log("OPEN dashboard")
+        tts.say(f"داشبورد رو تو مرورگر باز کردم {cfg.user_title}.")
+    except Exception as exc:  # pragma: no cover
+        log.warning("باز کردن داشبورد ناموفق بود: %s", exc)
 
 
 def _cache_progress(done: int, total: int) -> None:

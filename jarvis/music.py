@@ -53,6 +53,8 @@ class MusicPlayer:
             pygame.mixer.music.play()
             name = os.path.splitext(os.path.basename(path))[0]
             STATE.log(f"MUSIC ▶ {name}")
+            with STATE.lock:
+                STATE.now_playing = name
             tts.say(f"در حال پخش {name} {self.title}.")
         except Exception as exc:
             log.warning("پخش آهنگ ناموفق بود: %s", exc)
@@ -83,6 +85,8 @@ class MusicPlayer:
     def stop(self) -> None:
         if pygame:
             pygame.mixer.music.stop()
+        with STATE.lock:
+            STATE.now_playing = ""
         tts.say(f"آهنگ رو متوقف کردم {self.title}.")
 
     def pause(self) -> None:

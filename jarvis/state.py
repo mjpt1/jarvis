@@ -21,6 +21,8 @@ class SharedState:
     awaiting_command: bool = False
     conversation_active: bool = False   # حالت مکالمه‌ی پیوسته فعال است
     last_heard_text: str = ""
+    last_reply: str = ""           # آخرین چیزی که جارویس گفت
+    now_playing: str = ""          # آهنگِ در حال پخش
     partial_text: str = ""
     mic_level: float = 0.0          # 0..1 دامنه‌ی صدای کاربر
     tts_level: float = 0.0          # 0..1 دامنه‌ی صدای جارویس هنگام صحبت
