@@ -539,6 +539,8 @@ class CommandEngine:
         cmd = self.match(text)
         if cmd:
             STATE.log(cmd.name)
+            with STATE.lock:
+                STATE.tool_call_count += 1
             try:
                 cmd.handler(text) if cmd.wants_text else cmd.handler()
             except Exception as exc:

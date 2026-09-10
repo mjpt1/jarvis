@@ -42,8 +42,10 @@ class SharedState:
     # سیستم
     cpu_percent: float = 0.0
     ram_percent: float = 0.0
+    disk_percent: float = 0.0
     battery_percent: float | None = None
     net_history: list[float] = field(default_factory=list)
+    tool_call_count: int = 0        # تعداد دستورهای اجراشده در این نشست
 
     # آب‌وهوا
     weather_temp: float | None = None

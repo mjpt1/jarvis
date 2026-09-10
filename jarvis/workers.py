@@ -33,6 +33,11 @@ def system_stats_worker(cfg: Config) -> None:
             except Exception:
                 pass
 
+            try:
+                disk = psutil.disk_usage("/").percent
+            except Exception:
+                disk = 0.0
+
             now_net = psutil.net_io_counters()
             now_t = time.time()
             recv_kbps = 0.0
@@ -44,6 +49,7 @@ def system_stats_worker(cfg: Config) -> None:
             with STATE.lock:
                 STATE.cpu_percent = cpu
                 STATE.ram_percent = ram
+                STATE.disk_percent = disk
                 STATE.battery_percent = batt
                 STATE.net_history.append(recv_kbps)
                 del STATE.net_history[:-40]
