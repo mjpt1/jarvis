@@ -53,6 +53,9 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
                             max_turns=cfg.chat_history_max_turns, title=cfg.user_title,
                             allow_actions=cfg.claude_can_run_actions)
 
+    from .integrations import registry as _integrations
+    _integrations.setup(cfg)
+
     engine = CommandEngine(cfg)
 
     if cfg.mission_enabled:
@@ -93,6 +96,10 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
     if cfg.memory_enabled and cfg.nightly_consolidation_hour:
         from .workers import nightly_consolidation_worker
         threading.Thread(target=nightly_consolidation_worker, args=(cfg,), daemon=True).start()
+
+    if _integrations.status(cfg).get("telegram"):
+        from .integrations.telegram_bot import worker as _tg_worker
+        threading.Thread(target=_tg_worker, daemon=True).start()
 
     if cfg.mission_enabled:
         def _resume():

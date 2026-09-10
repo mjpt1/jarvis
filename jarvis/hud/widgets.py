@@ -175,12 +175,27 @@ def subtitle_bar(screen, w, h, fonts, subtitle):
     blit(screen, fonts.subtitle, subtitle, theme.WHITE, (w // 2, h - 57), anchor="center")
 
 
+_int_cache = {"t": 0.0, "items": []}
+
+
 def status_chips(screen, x, y, fonts):
-    """نشانگرهای کوچک وضعیت دوربین/صدا/Claude."""
+    """نشانگرهای کوچک وضعیت دوربین/صدا/Claude/ادغام‌ها."""
+    import time as _t
     from .. import claude_client
     with STATE.lock:
-        cam, voice = STATE.camera_enabled, STATE.voice_enabled
+        cam, voice, tg = STATE.camera_enabled, STATE.voice_enabled, STATE.telegram_enabled
     items = [("دوربین", cam), ("صدا", voice), ("Claude", claude_client.available())]
+    if _t.time() - _int_cache["t"] > 8.0:
+        _int_cache["t"] = _t.time()
+        try:
+            from ..integrations import filesystem, google_ws, notion_ws, spotify_ws, web
+            _int_cache["items"] = [
+                ("وب", web.available()), ("جیمیل", google_ws.available()),
+                ("اسپاتیفای", spotify_ws.available()), ("نوشن", notion_ws.available()),
+            ]
+        except Exception:
+            _int_cache["items"] = []
+    items += _int_cache["items"] + [("تلگرام", tg)]
     cx = x
     for label, on in items:
         col = theme.OK if on else theme.CYAN_FAINT

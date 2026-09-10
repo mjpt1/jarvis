@@ -178,6 +178,8 @@ class CommandEngine:
                       [f"{alias} رو باز کن", f"{alias} باز کن"],
                       A.make_folder_action(alias, path, T)))
 
+        self._build_integrations(C)
+
         # جملات ثابتِ وابسته به «خطاب کاربر»
         self.wake_ack = [f"بله {T}؟", f"گوش می‌کنم {T}.", f"در خدمتم {T}."]
         self.unknown_lines = [f"متوجه نشدم {T}، دوباره بگید.",
@@ -187,6 +189,72 @@ class CommandEngine:
         # خطوط ثابت برای پیش‌ساختِ کش
         self.static_lines = (self.wake_ack + self.unknown_lines + self.confirm_cancelled
                              + [f"سلام {T}.", f"در خدمتم {T}."])
+
+    # ------------------------------------------------------------------
+    def _build_integrations(self, C) -> None:
+        """دستورهای صوتیِ ادغام‌ها — فقط آن‌هایی که واقعاً در دسترس‌اند."""
+        T = self.title
+        say = tts.say
+        from .integrations import (filesystem, google_ws, notion_ws, spotify_ws, web)
+
+        if self.cfg.web_enabled and web.available():
+            C(Command("WEB_ANSWER",
+                      ["تو اینترنت بگرد", "تو وب سرچ کن", "از اینترنت بپرس",
+                       "تو گوگل بگرد و بگو", "جوابش رو از اینترنت پیدا کن"],
+                      self._cmd_web_answer, wants_text=True))
+
+        if self.cfg.google_enabled and google_ws.available():
+            C(Command("GMAIL_UNREAD",
+                      ["ایمیل جدید دارم", "ایمیل‌های نخونده", "میل چک کن",
+                       "ایمیلام رو بخون"],
+                      lambda: say(google_ws.unread_summary())))
+            C(Command("CAL_UPCOMING",
+                      ["برنامه‌ام چیه", "تقویمم چیه", "قرارهای این هفته",
+                       "رویدادهای پیش رو", "امروز چه قراری دارم"],
+                      lambda: say(google_ws.upcoming_events())))
+
+        if self.cfg.spotify_enabled and spotify_ws.available():
+            C(Command("SPOT_PLAY", ["اسپاتیفای پخش کن", "اسپاتیفای ادامه بده"],
+                      lambda: say(spotify_ws.play())))
+            C(Command("SPOT_PAUSE", ["اسپاتیفای رو نگه دار", "اسپاتیفای مکث"],
+                      lambda: say(spotify_ws.pause())))
+            C(Command("SPOT_NEXT", ["اسپاتیفای بعدی"], lambda: say(spotify_ws.next_track())))
+            C(Command("SPOT_PREV", ["اسپاتیفای قبلی"], lambda: say(spotify_ws.prev_track())))
+            C(Command("SPOT_NOW", ["چی داره پخش میشه", "الان چه آهنگیه"],
+                      lambda: say(spotify_ws.current())))
+            C(Command("SPOT_SEARCH", ["تو اسپاتیفای پخش کن", "از اسپاتیفای بذار"],
+                      self._cmd_spotify_search, wants_text=True))
+
+        if self.cfg.notion_enabled and notion_ws.available():
+            C(Command("NOTION_SEARCH", ["تو نوشن بگرد", "تو نوشن پیدا کن",
+                                        "از نوشن برام بیار"],
+                      self._cmd_notion, wants_text=True))
+
+    def _cmd_web_answer(self, text: str):
+        from .integrations import web
+        from .text_fa import strip_phrase
+        q = text
+        for p in ("تو اینترنت بگرد", "تو وب سرچ کن", "از اینترنت بپرس",
+                  "تو گوگل بگرد و بگو", "جوابش رو از اینترنت پیدا کن", "و بگو", "ببین"):
+            q = strip_phrase(q, p)
+        tts.say(f"{self.title}، بذارید ببینم…")
+        tts.say(web.answer(q.strip(" ؟?،.")))
+
+    def _cmd_spotify_search(self, text: str):
+        from .integrations import spotify_ws
+        from .text_fa import strip_phrase
+        q = text
+        for p in ("تو اسپاتیفای پخش کن", "از اسپاتیفای بذار", "آهنگ", "رو"):
+            q = strip_phrase(q, p)
+        tts.say(spotify_ws.play_search(q.strip()))
+
+    def _cmd_notion(self, text: str):
+        from .integrations import notion_ws
+        from .text_fa import strip_phrase
+        q = text
+        for p in ("تو نوشن بگرد", "تو نوشن پیدا کن", "از نوشن برام بیار", "دنبال", "درباره"):
+            q = strip_phrase(q, p)
+        tts.say(notion_ws.search_and_read(q.strip()))
 
     # ------------------------------------------------------------------
     def _register_claude_actions(self) -> None:

@@ -18,6 +18,16 @@ psutil>=5.9
 arabic-reshaper>=3.0
 python-bidi>=0.4
 
+# --- ابزارِ وب (فاز ۲) ---
+beautifulsoup4>=4.12
+
+# --- ادغام‌های خارجی (فاز ۲) — اختیاری، بدونشان هم برنامه کار می‌کند ---
+#   Google (Gmail + Calendar):
+#     pip install "google-api-python-client>=2.100" "google-auth-oauthlib>=1.2"
+#   Spotify:
+#     pip install "spotipy>=2.24"
+#   Notion و Telegram: وابستگی ندارند (فقط urllib)
+
 # --- اسکرین‌شات ---
 pillow>=10.0
 

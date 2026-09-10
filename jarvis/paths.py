@@ -16,6 +16,8 @@ DATA_DIR = APP_DIR / "data"           # پایگاه‌داده‌ها (حافظ
 MEMORY_DB = DATA_DIR / "memory.db"
 MISSIONS_DB = DATA_DIR / "missions.db"
 MEMORY_VAULT = APP_DIR / "memory_vault"   # آینه‌ی Markdown سازگار با Obsidian
+CREDENTIALS_DIR = APP_DIR / "credentials"  # google_credentials.json و توکن‌های OAuth
+FILES_DIR = HOME / "JarvisFiles"          # ریشه‌ی پیش‌فرضِ مجازِ عملیاتِ فایل
 SCREENSHOT_DIR = HOME / "Pictures" / "JarvisScreenshots"
 
 # ریشه‌ی سورس (برای دسترسی به assets)
@@ -29,5 +31,6 @@ LOCAL_CONFIG_FILE = PACKAGE_DIR.parent / "config.json"
 
 
 def ensure_dirs() -> None:
-    for d in (APP_DIR, MODELS_DIR, CACHE_DIR, LOG_DIR, DATA_DIR, MEMORY_VAULT):
+    for d in (APP_DIR, MODELS_DIR, CACHE_DIR, LOG_DIR, DATA_DIR, MEMORY_VAULT,
+              CREDENTIALS_DIR):
         d.mkdir(parents=True, exist_ok=True)

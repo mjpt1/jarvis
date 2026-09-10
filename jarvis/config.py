@@ -102,6 +102,32 @@ class Config:
     mission_max_steps: int = 8
     mission_autoconfirm: bool = False      # اجرای گام‌های حساس بدون تایید صوتی
 
+    # --- ابزارها (فاز ۲) ---
+    web_enabled: bool = True               # جست‌وجو و خواندنِ صفحه‌ی وب (بدون کلید)
+    web_max_chars: int = 4000              # سقفِ متنِ استخراج‌شده از یک صفحه
+
+    fs_enabled: bool = True
+    fs_whitelist: list[str] = field(default_factory=list)   # مسیرهای مجاز؛ خالی = فقط ~/JarvisFiles
+    fs_allow_write: bool = True
+
+    cli_enabled: bool = False              # پیش‌فرض خاموش (پرخطر)
+    cli_whitelist: list[str] = field(default_factory=lambda: [
+        "echo", "dir", "ls", "type", "cat", "whoami", "hostname", "date", "ver",
+        "ipconfig", "systeminfo", "git", "python", "pip",
+    ])
+
+    # --- ادغام‌های خارجی (نیاز به کلید؛ تا تنظیم نشوند خاموش‌اند) ---
+    google_enabled: bool = True            # Gmail + Calendar؛ به credentials نیاز دارد
+    spotify_enabled: bool = True
+    spotify_client_id: str = ""
+    spotify_client_secret: str = ""
+    spotify_redirect_uri: str = "http://localhost:8888/callback"
+    notion_enabled: bool = True
+    notion_token: str = ""
+    telegram_enabled: bool = True
+    telegram_bot_token: str = ""
+    telegram_owner_id: int = 0             # فقط این کاربر می‌تواند با بات حرف بزند
+
     # --- Claude (اختیاری) ---
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-haiku-4-5-20251001"
@@ -129,10 +155,21 @@ class Config:
             clean["windowed_size"] = tuple(clean["windowed_size"])
         cfg = cls(**clean)
 
-        # متغیر محیطی همیشه اولویت دارد
-        env_key = os.environ.get("ANTHROPIC_API_KEY")
-        if env_key:
-            cfg.anthropic_api_key = env_key
+        # متغیرهای محیطی همیشه اولویت دارند
+        env_map = {
+            "ANTHROPIC_API_KEY": "anthropic_api_key",
+            "SPOTIFY_CLIENT_ID": "spotify_client_id",
+            "SPOTIFY_CLIENT_SECRET": "spotify_client_secret",
+            "NOTION_TOKEN": "notion_token",
+            "TELEGRAM_BOT_TOKEN": "telegram_bot_token",
+        }
+        for env_name, attr in env_map.items():
+            val = os.environ.get(env_name)
+            if val:
+                setattr(cfg, attr, val)
+        owner = os.environ.get("TELEGRAM_OWNER_ID")
+        if owner and owner.isdigit():
+            cfg.telegram_owner_id = int(owner)
 
         if not cfg.folder_aliases:
             cfg.folder_aliases = cfg._default_folder_aliases()

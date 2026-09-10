@@ -21,17 +21,21 @@ dependencies = [
     "python-bidi>=0.4",
     "pillow>=10.0",
     "python-dotenv>=1.0",
+    "beautifulsoup4>=4.12",
 ]
 
 [project.optional-dependencies]
 win = ["pycaw>=20240210", "comtypes>=1.2"]
+google = ["google-api-python-client>=2.100", "google-auth-oauthlib>=1.2"]
+spotify = ["spotipy>=2.24"]
 dev = ["pytest>=7"]
 
 [project.scripts]
 jarvis = "jarvis.__main__:main"
 
 [tool.setuptools]
-packages = ["jarvis", "jarvis.hud"]
+packages = ["jarvis", "jarvis.hud", "jarvis.memory", "jarvis.missions",
+            "jarvis.integrations"]
 
 [tool.setuptools.package-data]
 jarvis = ["assets/fonts/*.ttf"]

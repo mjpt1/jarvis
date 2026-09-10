@@ -118,11 +118,62 @@ def build_default_registry(engine) -> ToolRegistry:
         Tool("wait", "مکث چند ثانیه‌ای", _wait, {"seconds": "ثانیه"}),
         Tool("remember", "افزودن یک نکته به حافظه‌ی بلندمدت", _remember, {"text": "متن"}),
         Tool("recall", "جست‌وجو در حافظه", _recall, {"query": "موضوع"}),
-        Tool("web_search", "جست‌وجوی وب در مرورگر", _web_search, {"query": "عبارت"}),
+        Tool("web_search", "باز کردن جست‌وجوی وب در مرورگر", _web_search, {"query": "عبارت"}),
         Tool("open_url", "باز کردن یک آدرس در مرورگر", _open_url, {"url": "نشانی"}),
         Tool("open_app", "باز کردن یک برنامه/پوشه", _open_app, {"name": "نام فارسی"}),
         Tool("run_command", "اجرای هر دستور صوتیِ دیگرِ جارویس", _run_command,
              {"phrase": "عبارتِ دستور"}),
     ]:
         reg.add(t)
+
+    _add_integration_tools(reg)
     return reg
+
+
+def _add_integration_tools(reg: ToolRegistry) -> None:
+    from ..integrations import (filesystem, google_ws, notion_ws, shell,
+                                spotify_ws, web)
+
+    if web.available():
+        reg.add(Tool("web_answer", "پاسخ به یک سؤال با جست‌وجو و خواندنِ وب",
+                     lambda question="": ToolResult(True, web.answer(question)),
+                     {"question": "سؤال"}))
+        reg.add(Tool("web_read", "خواندنِ متنِ یک صفحه‌ی وب",
+                     lambda url="": ToolResult(True, web.fetch(url) or "متنی نبود"),
+                     {"url": "نشانی"}))
+    if filesystem.available():
+        reg.add(Tool("fs_list", "فهرستِ فایل‌های یک پوشه‌ی مجاز",
+                     lambda path=".": ToolResult(True, filesystem.list_dir(path)),
+                     {"path": "مسیر"}))
+        reg.add(Tool("fs_read", "خواندنِ یک فایلِ متنیِ مجاز",
+                     lambda path="": ToolResult(True, filesystem.read_file(path)),
+                     {"path": "مسیر"}))
+        reg.add(Tool("fs_write", "نوشتن در یک فایلِ مجاز",
+                     lambda path="", content="": ToolResult(True,
+                         filesystem.write_file(path, content)),
+                     {"path": "مسیر", "content": "محتوا"}, dangerous=True))
+    if shell.available():
+        reg.add(Tool("cli", "اجرای یک دستورِ خط‌فرمانِ مجاز",
+                     lambda command="": ToolResult(True, shell.run(command)),
+                     {"command": "دستور"}, dangerous=True))
+    if google_ws.available():
+        reg.add(Tool("gmail_unread", "خلاصه‌ی ایمیل‌های خوانده‌نشده",
+                     lambda: ToolResult(True, google_ws.unread_summary()), {}))
+        reg.add(Tool("gmail_send", "فرستادنِ ایمیل", lambda to="", subject="", body="":
+                     ToolResult(True, google_ws.send_email(to, subject, body)),
+                     {"to": "گیرنده", "subject": "موضوع", "body": "متن"}, dangerous=True))
+        reg.add(Tool("calendar_upcoming", "رویدادهای پیشِ رو",
+                     lambda: ToolResult(True, google_ws.upcoming_events()), {}))
+        reg.add(Tool("calendar_add", "افزودنِ رویداد به تقویم",
+                     lambda title="", start="", end="":
+                     ToolResult(True, google_ws.create_event(title, start, end)),
+                     {"title": "عنوان", "start": "شروع ISO", "end": "پایان ISO"},
+                     dangerous=True))
+    if spotify_ws.available():
+        reg.add(Tool("spotify_play", "پخشِ آهنگ در Spotify با جست‌وجو",
+                     lambda query="": ToolResult(True, spotify_ws.play_search(query)),
+                     {"query": "نام آهنگ"}))
+    if notion_ws.available():
+        reg.add(Tool("notion_search", "جست‌وجو و خواندنِ صفحه‌ی Notion",
+                     lambda query="": ToolResult(True, notion_ws.search_and_read(query)),
+                     {"query": "موضوع"}))

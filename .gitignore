@@ -222,3 +222,8 @@ __marimo__/
 /.jarvis/
 jarvis/assets/models/
 *.part
+# اعتبارنامه‌ها هرگز کامیت نشوند
+**/google_credentials.json
+**/*_token.json
+**/credentials/
+/config/

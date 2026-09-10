@@ -25,6 +25,7 @@ class SharedState:
     mic_level: float = 0.0          # 0..1 دامنه‌ی صدای کاربر
     tts_level: float = 0.0          # 0..1 دامنه‌ی صدای جارویس هنگام صحبت
     voice_enabled: bool = False     # آیا ترد صدا واقعاً بالا آمد
+    telegram_enabled: bool = False
 
     # دوربین/چهره
     camera_enabled: bool = False
