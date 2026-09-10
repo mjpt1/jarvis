@@ -66,6 +66,7 @@ class Onboarding:
         self.candidate = ""
         self.answers: dict[str, str] = {}
         self.retries = 0
+        self.struggle = 0          # مجموعِ دفعاتِ نشنیدن/رد در کلِ نشست
 
     # ------------------------------------------------------------------
     def start(self) -> str:
@@ -107,6 +108,9 @@ class Onboarding:
                 self.retries = 0
                 return self._after_advance()
             if any(w in n for w in _NO):
+                self.struggle += 1
+                if self.struggle >= 5:
+                    return self._bail()
                 self.retries += 1
                 if self.retries >= 3:
                     self.i += 1
@@ -118,6 +122,9 @@ class Onboarding:
 
         # phase == ask (یا پاسخِ تازه در confirm)
         if not answer or (conf < _MIN_CONF and len(answer.split()) <= 6):
+            self.struggle += 1
+            if self.struggle >= 5:
+                return self._bail()
             self.retries += 1
             if self.retries >= 4:
                 self.i += 1
@@ -134,6 +141,12 @@ class Onboarding:
 
     def _t(self) -> str:
         return getattr(self.cfg, "user_title", "قربان")
+
+    def _bail(self) -> tuple[bool, str]:
+        """صدا هنوز خوب شنیده نمی‌شود؛ فعلاً بی‌خیالِ آشنایی می‌شویم."""
+        self._finish()
+        return True, (f"بذارید بعداً که مدلِ صوتیم بهتر شد این‌ها رو بپرسم {self._t()}. "
+                      f"فعلاً «{self._t()}» صداتون می‌کنم؛ هر وقت خواستید بگید «تنظیمات اولیه».")
 
     def _after_advance(self, prefix: str = "") -> tuple[bool, str]:
         if self.is_done():

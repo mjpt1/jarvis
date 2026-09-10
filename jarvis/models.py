@@ -33,6 +33,10 @@ GESTURE_URL = (
 GESTURE_PATH = MODELS_DIR / "gesture_recognizer.task"
 
 
+class _Aborted(Exception):
+    """دانلود به‌خاطرِ خاموش‌شدنِ برنامه قطع شد (نه خطای واقعی)."""
+
+
 def _set_status(text: str) -> None:
     with STATE.lock:
         STATE.download_status = text
@@ -73,10 +77,15 @@ def _download(url: str, dest, attempts: int = 6, on_progress=None, label: str = 
                             if on_progress:
                                 on_progress(got, total)
             if not STATE.running:
-                return
+                raise _Aborted()
+            if not os.path.exists(dest_tmp) or os.path.getsize(dest_tmp) < 1024:
+                raise OSError("فایلِ دانلود ناقص است")
             os.replace(dest_tmp, dest)
             _set_status("")
             return
+        except _Aborted:
+            _set_status("")
+            raise
         except Exception as exc:  # pragma: no cover - شبکه
             last_exc = exc
             log.warning("دانلود ناموفق (تلاش %d/%d) — از سرگیری خودکار: %s", i, attempts, exc)
