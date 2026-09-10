@@ -231,6 +231,17 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
             log.info("شنیده شد: %r  (convo=%s)", text, convo)
             with STATE.lock:
                 STATE.last_heard_text = text
+                onboarding_on = STATE.onboarding_active
+
+            # ۰) پاسخ به سؤالِ آشناییِ اولیه
+            ob = getattr(engine, "onboarding", None)
+            if onboarding_on and ob is not None:
+                done, nxt = ob.submit(text)
+                tts.say(nxt)
+                _drain()
+                if done:
+                    convo = False
+                continue
 
             # ۱) تاییدِ اقدام حساس
             with STATE.lock:

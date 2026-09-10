@@ -124,6 +124,8 @@ class MinimalHUD:
             reply = s.current_subtitle or getattr(s, "last_reply", "")
             gate = s.owner_gate_active and not s.owner_present
             music_np = getattr(s, "now_playing", "")
+            ob_active = s.onboarding_active
+            ob_q = s.onboarding_question
         level = max(mic, tts_lvl)
         title = getattr(cfg, "user_title", "قربان")
 
@@ -172,6 +174,20 @@ class MinimalHUD:
                  anchor="topright")
             blit(screen, fonts.fa_small, name or music_np[:20], (210, 225, 240),
                  (ox + cardw - 12, oy + 32), anchor="topright")
+
+        # آشناییِ اولیه — پرسشِ فعلی وسطِ صفحه
+        if ob_active and ob_q:
+            box = pygame.Surface((min(w - 120, 900), 96), pygame.SRCALPHA)
+            pygame.draw.rect(box, (10, 18, 30, 235), box.get_rect(), border_radius=14)
+            pygame.draw.rect(box, (*_BLUE, 150), box.get_rect(), width=1, border_radius=14)
+            bx = (w - box.get_width()) // 2
+            screen.blit(box, (bx, h - 220))
+            blit(screen, fonts.fa_small, "آشناییِ اولیه", _BLUE_DIM,
+                 (w // 2, h - 210), anchor="midtop")
+            blit(screen, fonts.fa, ob_q, (220, 235, 250), (w // 2, h - 186),
+                 anchor="midtop")
+            blit(screen, fonts.fa_small, "پاسخ‌تون رو بگید…", _BLUE,
+                 (w // 2, h - 150), anchor="midtop")
 
         # پایین-راست: آخرین پاسخ / وضعیت
         status_line = (subtitle if speaking else

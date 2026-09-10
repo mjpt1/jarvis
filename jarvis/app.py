@@ -65,6 +65,16 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
         from .missions.engine import attach as _attach_missions
         _attach_missions(engine)
 
+    from .onboarding import Onboarding, needs_onboarding
+    engine.onboarding = Onboarding(cfg)
+    first_run = needs_onboarding()
+    if first_run and not cfg.enable_voice:
+        import sys
+        if sys.stdin and sys.stdin.isatty():
+            from .onboarding import run_text
+            run_text(cfg)
+        first_run = False       # بدون صدا و بدون ترمینال: با پیش‌فرض ادامه بده
+
     pygame.init()
     pygame.mixer.pre_init(44100, -16, 2, 512)
     pygame.mixer.init()
@@ -95,6 +105,15 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
         threading.Thread(target=camera_worker, args=(cfg, _emit_event_line), daemon=True).start()
     if cfg.enable_voice:
         threading.Thread(target=voice_worker, args=(cfg, engine), daemon=True).start()
+
+    if first_run and cfg.enable_voice:
+        def _kick_onboarding():
+            for _ in range(120):                 # صبر تا کش صدا آماده شود
+                if STATE.cache_ready or not STATE.running:
+                    break
+                time.sleep(0.5)
+            tts.say(engine.onboarding.start())
+        threading.Thread(target=_kick_onboarding, daemon=True).start()
     threading.Thread(target=system_stats_worker, args=(cfg,), daemon=True).start()
     threading.Thread(target=weather_worker, args=(cfg,), daemon=True).start()
 

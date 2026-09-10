@@ -20,6 +20,8 @@ class SharedState:
     audio_muted: bool = False
     awaiting_command: bool = False
     conversation_active: bool = False   # حالت مکالمه‌ی پیوسته فعال است
+    onboarding_active: bool = False     # در حالِ پرسش‌وپاسخِ آشناییِ اولیه
+    onboarding_question: str = ""       # پرسشِ فعلیِ آشنایی
     last_heard_text: str = ""
     last_reply: str = ""           # آخرین چیزی که جارویس گفت
     now_playing: str = ""          # آهنگِ در حال پخش

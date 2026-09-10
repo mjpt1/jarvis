@@ -91,7 +91,10 @@ class CommandEngine:
                   lambda: say(random.choice([f"خواهش می‌کنم {T}.",
                                              f"کاری نکردم {T}.", f"همیشه در خدمتم {T}."]))))
         C(Command("WHO_AM_I", ["من کیم", "اسم من چیه", "من رو می‌شناسی"],
-                  lambda: say(f"شما {T} هستید، کاربر اصلیِ من.")))
+                  self._cmd_who_am_i))
+        C(Command("ONBOARD", ["تنظیمات اولیه", "دوباره ازم سوال بپرس", "از اول باهام آشنا شو",
+                              "دوباره خودت رو معرفی کن"],
+                  self._cmd_reonboard))
 
         if self.cfg.proactive_enabled:
             C(Command("BUDGET", ["چقدر خرج کردی", "بودجه چقدره", "امروز چقدر هزینه شد",
@@ -320,6 +323,23 @@ class CommandEngine:
                                       lambda q="": system_actions.google_search(q, self.title))
 
     # ------------------------------------------------------------------
+    # ---------------- آشنایی ----------------
+    def _cmd_who_am_i(self):
+        from .memory.store import get_store
+        hits = get_store().search("اسم کاربر", limit=1) or get_store().by_category("identity")[:1]
+        if hits:
+            tts.say(f"{hits[0].text} {self.title}.")
+        else:
+            tts.say(f"شما {self.title} هستید، کاربر اصلیِ من. اگه بخواید می‌تونم بهتر "
+                    f"باهاتون آشنا بشم؛ بگید «تنظیمات اولیه».")
+
+    def _cmd_reonboard(self):
+        ob = getattr(self, "onboarding", None)
+        if ob is None:
+            from .onboarding import Onboarding
+            ob = self.onboarding = Onboarding(self.cfg)
+        tts.say(ob.start())
+
     # ---------------- مهارت‌ها ----------------
     def _skills(self):
         if not hasattr(self, "_skill_mgr"):
