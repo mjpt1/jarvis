@@ -157,10 +157,25 @@ def camera_worker(cfg: Config, emit) -> None:
         landmarker.close()
         return
 
+    # تشخیصِ چهره‌ی صاحب (اختیاری) برای بیدارباشِ بیومتریک
+    face_id = None
+    if cfg.face_id_enabled:
+        try:
+            from .integrations import face_id as _fid
+            if _fid.available():
+                face_id = _fid
+                with STATE.lock:
+                    STATE.owner_gate_active = True
+                    STATE.owner_present = False
+                log.info("بیدارباشِ بیومتریک فعال شد (تشخیص چهره‌ی صاحب).")
+        except Exception as exc:
+            log.debug("face_id: %s", exc)
+
     with STATE.lock:
         STATE.camera_enabled = True
     manager = EventManager(cfg.user_title, emit)
     start = time.time()
+    _last_face_check = 0.0
     try:
         while STATE.running:
             ok, frame = cap.read()
@@ -200,6 +215,19 @@ def camera_worker(cfg: Config, emit) -> None:
                 STATE.face_area_ratio = area
                 STATE.ear = ear
 
+            # چهره‌ی صاحب را هر ~۱.۵ ثانیه بررسی کن (وقتی چهره‌ای هست)
+            if face_id is not None and present and time.time() - _last_face_check > 1.5:
+                _last_face_check = time.time()
+                try:
+                    is_owner = face_id.is_owner(rgb)
+                except Exception:
+                    is_owner = False
+                with STATE.lock:
+                    STATE.owner_present = is_owner
+            elif face_id is not None and not present:
+                with STATE.lock:
+                    STATE.owner_present = False
+
             manager.update(present, count, ear)
             time.sleep(0.01)
     finally:
@@ -207,3 +235,4 @@ def camera_worker(cfg: Config, emit) -> None:
         landmarker.close()
         with STATE.lock:
             STATE.camera_enabled = False
+            STATE.owner_gate_active = False

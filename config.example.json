@@ -44,6 +44,13 @@
   "mission_max_steps": 8,
   "mission_autoconfirm": false,
 
+  "vision_enabled": true,
+  "vision_source": "screen",
+  "yolo_model": "yolov8n.pt",
+  "vision_min_confidence": 0.4,
+  "face_id_enabled": true,
+  "face_id_tolerance": 0.5,
+
   "web_enabled": true,
   "web_max_chars": 4000,
   "fs_enabled": true,

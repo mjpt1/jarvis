@@ -36,6 +36,8 @@ class SharedState:
     roll: float = 0.0
     face_area_ratio: float = 0.0
     ear: float = 1.0
+    owner_present: bool = True      # چهره‌ی صاحب دیده می‌شود (اگر تشخیص چهره فعال باشد)
+    owner_gate_active: bool = False # بیدارباش مشروط به دیدنِ صاحب است
 
     # سیستم
     cpu_percent: float = 0.0

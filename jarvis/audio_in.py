@@ -139,6 +139,18 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
             except queue.Empty:
                 break
 
+    _owner_warned = [0.0]
+
+    def _owner_ok() -> bool:
+        with STATE.lock:
+            if not STATE.owner_gate_active:
+                return True
+            ok = STATE.owner_present
+        if not ok and time.time() - _owner_warned[0] > 20:
+            _owner_warned[0] = time.time()
+            log.info("بیدارباش نادیده گرفته شد: چهره‌ی صاحب دیده نمی‌شود.")
+        return ok
+
     with stream:
         while STATE.running:
             with STATE.lock:
@@ -175,7 +187,7 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
 
             # --- شناسگرِ محدودِ بیدارباش (فقط وقتی هنوز فعال نیستیم) ---
             if (wake_rec is not None and not convo and awaiting_since is None
-                    and peak >= cfg.wake_min_level):
+                    and peak >= cfg.wake_min_level and _owner_ok()):
                 if wake_rec.AcceptWaveform(data):
                     wtext = json.loads(wake_rec.Result()).get("text", "")
                 else:
@@ -254,6 +266,8 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
 
             # ۳) کلمه‌ی بیدارباش یا ادامه‌ی دستور
             has_wake, after = _contains_wake(text, cfg.wake_words, cfg.wake_fuzzy)
+            if has_wake and not convo and not _owner_ok():
+                has_wake = False
             import random
             last_activity = time.time()
 

@@ -132,7 +132,12 @@ def build_default_registry(engine) -> ToolRegistry:
 
 def _add_integration_tools(reg: ToolRegistry) -> None:
     from ..integrations import (filesystem, google_ws, notion_ws, shell,
-                                spotify_ws, web)
+                                spotify_ws, vision_tools, web)
+
+    if vision_tools.available():
+        reg.add(Tool("describe_scene", "توصیفِ چیزی که روی صفحه/دوربین دیده می‌شود",
+                     lambda: ToolResult(True, vision_tools.describe_scene(narrate=False)),
+                     {}))
 
     if web.available():
         reg.add(Tool("web_answer", "پاسخ به یک سؤال با جست‌وجو و خواندنِ وب",

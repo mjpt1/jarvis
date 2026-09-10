@@ -195,7 +195,18 @@ class CommandEngine:
         """دستورهای صوتیِ ادغام‌ها — فقط آن‌هایی که واقعاً در دسترس‌اند."""
         T = self.title
         say = tts.say
-        from .integrations import (filesystem, google_ws, notion_ws, spotify_ws, web)
+        from .integrations import (filesystem, google_ws, notion_ws, spotify_ws,
+                                   vision_tools, web)
+
+        if self.cfg.vision_enabled and vision_tools.available():
+            C(Command("SCENE", ["چی می‌بینی", "صحنه رو توصیف کن", "رو صفحه چی هست",
+                                "جلوت چی هست", "تو اتاق چی می‌بینی", "چی جلومه"],
+                      lambda: say(vision_tools.describe_scene())))
+
+        if self.cfg.face_id_enabled:
+            C(Command("ENROLL_FACE", ["چهره‌ی من رو ثبت کن", "صورتم رو یاد بگیر",
+                                      "چهره‌ام رو ذخیره کن"],
+                      self._cmd_enroll_face))
 
         if self.cfg.web_enabled and web.available():
             C(Command("WEB_ANSWER",
@@ -247,6 +258,25 @@ class CommandEngine:
         for p in ("تو اسپاتیفای پخش کن", "از اسپاتیفای بذار", "آهنگ", "رو"):
             q = strip_phrase(q, p)
         tts.say(spotify_ws.play_search(q.strip()))
+
+    def _cmd_enroll_face(self):
+        try:
+            import cv2
+        except Exception:
+            tts.say(f"{self.title}، برای این کار به دوربین نیاز دارم.")
+            return
+        from .integrations import face_id
+        from .paths import CREDENTIALS_DIR
+        tts.say(f"{self.title}، لطفاً چند لحظه رو به دوربین نگاه کنید.")
+        cap = cv2.VideoCapture(self.cfg.camera_index)
+        ok, frame = cap.read()
+        cap.release()
+        if not ok:
+            tts.say(f"{self.title}، دوربین در دسترس نبود.")
+            return
+        tmp = str(CREDENTIALS_DIR / "_enroll_tmp.jpg")
+        cv2.imwrite(tmp, frame)
+        tts.say(face_id.enroll(tmp))
 
     def _cmd_notion(self, text: str):
         from .integrations import notion_ws

@@ -75,6 +75,7 @@ def mic_meter(screen, x, y, w_box, h_box, fonts):
         voice_on = STATE.voice_enabled
         awaiting = STATE.awaiting_command
         convo = STATE.conversation_active
+        gate = STATE.owner_gate_active and not STATE.owner_present
     blit(screen, fonts.fa_small, "میکروفون", theme.CYAN_DIM, (x, y - 18))
     pygame.draw.rect(screen, theme.GAUGE_BG, (x, y, w_box, h_box), width=1)
     if not voice_on:
@@ -87,7 +88,10 @@ def mic_meter(screen, x, y, w_box, h_box, fonts):
         c = theme.OK if i < bars * 0.6 else theme.WARN
         col = c if i < lit else theme.GAUGE_BG
         pygame.draw.rect(screen, col, (x + i * bw + 1, y + 2, bw - 2, h_box - 4))
-    if convo:
+    if gate:
+        blit(screen, fonts.fa_small, "منتظر دیدنِ چهره‌ی شما…", theme.WARN,
+             (x, y + h_box + 4))
+    elif convo:
         blit(screen, fonts.fa_small, "حالت مکالمه — بگویید «بسه» تا تمام شود",
              theme.OK, (x, y + h_box + 4))
     elif awaiting:
@@ -188,10 +192,12 @@ def status_chips(screen, x, y, fonts):
     if _t.time() - _int_cache["t"] > 8.0:
         _int_cache["t"] = _t.time()
         try:
-            from ..integrations import filesystem, google_ws, notion_ws, spotify_ws, web
+            from ..integrations import (face_id, google_ws, notion_ws, spotify_ws,
+                                        vision_tools, web)
             _int_cache["items"] = [
                 ("وب", web.available()), ("جیمیل", google_ws.available()),
                 ("اسپاتیفای", spotify_ws.available()), ("نوشن", notion_ws.available()),
+                ("بینایی", vision_tools.available()), ("چهره", face_id.available()),
             ]
         except Exception:
             _int_cache["items"] = []

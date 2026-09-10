@@ -18,6 +18,7 @@ MISSIONS_DB = DATA_DIR / "missions.db"
 MEMORY_VAULT = APP_DIR / "memory_vault"   # آینه‌ی Markdown سازگار با Obsidian
 CREDENTIALS_DIR = APP_DIR / "credentials"  # google_credentials.json و توکن‌های OAuth
 FILES_DIR = HOME / "JarvisFiles"          # ریشه‌ی پیش‌فرضِ مجازِ عملیاتِ فایل
+OWNER_FACE = CREDENTIALS_DIR / "owner_face.jpg"   # عکس مرجع برای تشخیص چهره‌ی صاحب
 SCREENSHOT_DIR = HOME / "Pictures" / "JarvisScreenshots"
 
 # ریشه‌ی سورس (برای دسترسی به assets)

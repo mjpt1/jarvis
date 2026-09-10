@@ -116,6 +116,14 @@ class Config:
         "ipconfig", "systeminfo", "git", "python", "pip",
     ])
 
+    # --- بینایی پیشرفته (فاز ۳) ---
+    vision_enabled: bool = True
+    vision_source: str = "screen"         # screen | camera
+    yolo_model: str = "yolov8n.pt"        # خودکار دانلود می‌شود (نیاز به ultralytics)
+    vision_min_confidence: float = 0.4
+    face_id_enabled: bool = True          # بیدارباشِ بیومتریک (نیاز به face_recognition + عکس مرجع)
+    face_id_tolerance: float = 0.5
+
     # --- ادغام‌های خارجی (نیاز به کلید؛ تا تنظیم نشوند خاموش‌اند) ---
     google_enabled: bool = True            # Gmail + Calendar؛ به credentials نیاز دارد
     spotify_enabled: bool = True
