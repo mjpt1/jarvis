@@ -101,6 +101,11 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
         from .integrations.telegram_bot import worker as _tg_worker
         threading.Thread(target=_tg_worker, daemon=True).start()
 
+    if cfg.web_dashboard_enabled:
+        from .web import available as _web_ok, run_server as _web_run
+        if _web_ok():
+            threading.Thread(target=_web_run, args=(cfg,), daemon=True).start()
+
     if cfg.mission_enabled:
         def _resume():
             time.sleep(6)

@@ -122,6 +122,19 @@ python jarvis_v8.py           # معادل، برای Run در VS Code
 
 هر دو تا وقتی کتابخانه/عکسِ مرجعشان نباشد خاموش‌اند و بقیه‌ی برنامه کار می‌کند.
 
+## دسترسی از راه دور (فاز ۴)
+
+### بات تلگرام
+`@BotFather` → `/newbot` → توکن را در `telegram_bot_token` بگذار، و آیدی عددیِ
+خودت را (از `@userinfobot`) در `telegram_owner_id`. حالا از موبایل هر چیزی
+بپرسی همان مغز جواب می‌دهد — «یادت باشه که…»، «چی یادته…»، «سرچ کن…» هم کار
+می‌کند. فقط تو می‌توانی با بات حرف بزنی.
+
+### داشبورد وب
+`pip install ".[dashboard]"` (fastapi + uvicorn). موقع اجرا خودکار بالا می‌آید
+روی `http://127.0.0.1:8730` — چت با جارویس، وضعیت زنده (CPU/RAM/هوا/ادغام‌ها)،
+حافظه، و لاگ رویدادها. RTL و هم‌رنگِ HUD.
+
 ## حالت مکالمه‌ی پیوسته
 
 به‌صورت پیش‌فرض روشن است (`conversation_mode` در config). کافی است **یک بار**
@@ -174,6 +187,10 @@ jarvis/
   claude_client.py فال‌بک Claude با tool-use + تزریق حافظه
   memory/          Memory Kernel — store (SQLite/FTS), markdown_mirror, curator
   missions/        موتور مأموریت — tools, store (SQLite), engine
+  integrations/    web, filesystem, shell, google_ws, spotify_ws, notion_ws,
+                   telegram_bot, vision_tools, face_id, registry
+  brain.py         پاسخِ متنیِ مشترک (تلگرام + داشبورد)
+  web/             داشبورد FastAPI
   vision.py        ترد دوربین + رویدادها
   audio_in.py      ترد Vosk + بیدارباش + تایید صوتی
   workers.py       آمار سیستم + آب‌وهوا

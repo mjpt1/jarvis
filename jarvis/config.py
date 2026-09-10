@@ -136,6 +136,11 @@ class Config:
     telegram_bot_token: str = ""
     telegram_owner_id: int = 0             # فقط این کاربر می‌تواند با بات حرف بزند
 
+    # --- داشبورد وب (فاز ۴) ---
+    web_dashboard_enabled: bool = True
+    web_dashboard_host: str = "127.0.0.1"
+    web_dashboard_port: int = 8730
+
     # --- Claude (اختیاری) ---
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-haiku-4-5-20251001"

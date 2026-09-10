@@ -69,6 +69,10 @@
   "telegram_bot_token": "",
   "telegram_owner_id": 0,
 
+  "web_dashboard_enabled": true,
+  "web_dashboard_host": "127.0.0.1",
+  "web_dashboard_port": 8730,
+
   "anthropic_api_key": "",
   "anthropic_model": "claude-haiku-4-5-20251001",
   "chat_history_max_turns": 6,

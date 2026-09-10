@@ -30,6 +30,7 @@ google = ["google-api-python-client>=2.100", "google-auth-oauthlib>=1.2"]
 spotify = ["spotipy>=2.24"]
 vision = ["ultralytics>=8.1"]
 faceid = ["face_recognition>=1.3"]
+dashboard = ["fastapi>=0.115,<0.116", "starlette>=0.40,<0.42", "uvicorn>=0.29"]
 dev = ["pytest>=7"]
 
 [project.scripts]
@@ -37,7 +38,7 @@ jarvis = "jarvis.__main__:main"
 
 [tool.setuptools]
 packages = ["jarvis", "jarvis.hud", "jarvis.memory", "jarvis.missions",
-            "jarvis.integrations"]
+            "jarvis.integrations", "jarvis.web"]
 
 [tool.setuptools.package-data]
 jarvis = ["assets/fonts/*.ttf"]
