@@ -90,6 +90,20 @@ class CommandEngine:
         C(Command("WHO_AM_I", ["من کیم", "اسم من چیه", "من رو می‌شناسی"],
                   lambda: say(f"شما {T} هستید، کاربر اصلیِ من.")))
 
+        if self.cfg.proactive_enabled:
+            C(Command("BUDGET", ["چقدر خرج کردی", "بودجه چقدره", "امروز چقدر هزینه شد",
+                                 "مصرفت چقدره"],
+                      lambda: say(self._budget_line())))
+            C(Command("AUTONOMY_SET", ["سطح خودمختاری", "خودمختاریت رو بذار",
+                                       "استقلالت رو بذار", "آزادیت رو کم کن",
+                                       "آزادیت رو زیاد کن"],
+                      self._cmd_set_autonomy, wants_text=True))
+            C(Command("COMMAND_CENTER", ["چه کارهایی داری", "مرکز فرمان",
+                                         "چه خبر از کارها", "وضعیت کلی"],
+                      lambda: say(self._command_center_line())))
+            C(Command("QUIET_NIGHT", ["تا صبح ساکت باش", "شب‌بخیر", "دیگه چیزی نگو تا صبح"],
+                      self._cmd_quiet))
+
         if self.cfg.memory_enabled:
             C(Command("REMEMBER", ["این رو یادت باشه", "یادت باشه که", "به خاطر بسپار",
                                    "یادداشت کن که", "به یاد داشته باش", "ذخیره کن که"],
@@ -298,6 +312,52 @@ class CommandEngine:
                                       lambda q="": system_actions.google_search(q, self.title))
 
     # ------------------------------------------------------------------
+    # ---------------- پیش‌کنشی / حاکمیت ----------------
+    def _budget_line(self) -> str:
+        from .proactive.budget import BUDGET
+        return BUDGET.spoken(self.title)
+
+    def _cmd_set_autonomy(self, text: str):
+        from .proactive import notifications
+        from .text_fa import words_to_number, normalize
+        n = words_to_number(text)
+        norm = normalize(text)
+        if n is None:
+            if "کم" in norm:
+                n = max(0, notifications.autonomy() - 1)
+            elif "زیاد" in norm or "بیشتر" in norm:
+                n = min(5, notifications.autonomy() + 1)
+            else:
+                tts.say(f"{self.title}، یک عدد بین صفر تا پنج بگید.")
+                return
+        lvl = notifications.set_autonomy(int(n))
+        self.cfg.autonomy_level = lvl
+        desc = {0: "فقط وقتی بپرسید جواب می‌دم", 1: "اعلان‌های مهم رو می‌گم",
+                2: "کارهای خواندنی رو خودم انجام می‌دم",
+                3: "مأموریت پیشنهاد می‌دم و با تاییدتون اجرا می‌کنم",
+                4: "کارهای امن رو بدون تایید انجام می‌دم", 5: "کاملاً مستقل عمل می‌کنم"}
+        tts.say(f"باشه {self.title}، سطحِ خودمختاری روی {lvl} — {desc[lvl]}.")
+
+    def _command_center_line(self) -> str:
+        from .proactive.engine import engine as _pe
+        from .proactive.budget import BUDGET
+        from .proactive.notifications import recent, autonomy
+        pe = _pe()
+        parts = [f"سطحِ خودمختاری {autonomy()}"]
+        s = BUDGET.summary()
+        parts.append(f"امروز {s['calls']} تماس، {s['usd']:.3f} دلار")
+        notes = recent(3)
+        if notes:
+            parts.append("آخرین اعلان‌ها: " + "؛ ".join(n["text"] for n in notes))
+        else:
+            parts.append("اعلانِ تازه‌ای نیست")
+        return f"{self.title}، " + ". ".join(parts) + "."
+
+    def _cmd_quiet(self):
+        from .proactive import notifications
+        notifications.quiet_until_morning()
+        tts.say(f"شب‌بخیر {self.title}، تا صبح ساکت می‌مونم مگر چیزِ فوری باشه.")
+
     # ---------------- حافظه ----------------
     def _cmd_remember(self, text: str):
         from .text_fa import strip_phrase

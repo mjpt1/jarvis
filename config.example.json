@@ -73,6 +73,14 @@
   "web_dashboard_host": "127.0.0.1",
   "web_dashboard_port": 8730,
 
+  "proactive_enabled": true,
+  "autonomy_level": 1,
+  "quiet_hours": [23, 8],
+  "news_interests": [],
+  "calendar_alert_minutes": 30,
+  "budget_daily_usd": 1.0,
+  "budget_daily_calls": 300,
+
   "anthropic_api_key": "",
   "anthropic_model": "claude-haiku-4-5-20251001",
   "chat_history_max_turns": 6,

@@ -141,6 +141,22 @@ class Config:
     web_dashboard_host: str = "127.0.0.1"
     web_dashboard_port: int = 8730
 
+    # --- سیستمِ پیش‌کنشی و حاکمیت (فاز ۵) ---
+    proactive_enabled: bool = True
+    autonomy_level: int = 1            # 0 خاموش · 1 فقط اعلان · 2 +ابزارِ خواندنی
+                                       # 3 +مأموریتِ پیشنهادی با تایید · 4 +بدون تایید · 5 کامل
+    quiet_hours: list[int] = field(default_factory=lambda: [23, 8])  # [شروع, پایان]
+    news_interests: list[str] = field(default_factory=list)          # کلیدواژه‌های خبری
+    collector_weather_interval: int = 1800
+    collector_calendar_interval: int = 600
+    collector_mail_interval: int = 900
+    collector_news_interval: int = 3600
+    calendar_alert_minutes: int = 30
+
+    # بودجه‌ی روزانه (۰ = بی‌نهایت)
+    budget_daily_usd: float = 1.0
+    budget_daily_calls: int = 300
+
     # --- Claude (اختیاری) ---
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-haiku-4-5-20251001"

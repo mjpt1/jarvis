@@ -92,6 +92,27 @@ def _build_app():
         except Exception as exc:
             return {"error": str(exc)}
 
+    @app.get("/api/proactive")
+    def proactive():
+        try:
+            from ..proactive.engine import engine
+            from ..proactive.budget import BUDGET
+            from ..proactive.notifications import recent, autonomy
+            pe = engine()
+            if pe is not None:
+                return pe.command_center()
+            return {"autonomy": autonomy(), "budget": BUDGET.summary(),
+                    "notifications": recent(15), "collectors": []}
+        except Exception as exc:
+            return {"error": str(exc)}
+
+    @app.post("/api/autonomy")
+    def set_autonomy(level: int = Body(..., embed=True)):
+        from ..proactive.notifications import set_autonomy as _sa
+        if _cfg is not None:
+            _cfg.autonomy_level = _sa(level)
+        return {"autonomy": _sa(level)}
+
     @app.post("/api/chat")
     def chat(text: str = Body("", embed=True)):
         text = (text or "").strip()
@@ -153,6 +174,12 @@ button{background:var(--cyan);border:0;color:#012;padding:8px 14px;border-radius
     <div id="weather" style="margin-top:8px;color:var(--dim)"></div></div>
   <div class="card"><h2>حافظه (<span id="memc">0</span>)</h2><div id="mem"></div></div>
   <div class="card"><h2>رویدادها</h2><div id="log"></div></div>
+  <div class="card"><h2>مرکز فرمان</h2>
+    <div class="row">خودمختاری:
+      <input id="aut" type="range" min="0" max="5" step="1" onchange="setAut(this.value)">
+      <b id="autv" class="big" style="font-size:18px">–</b></div>
+    <div id="budget" style="color:var(--dim);margin:6px 0"></div>
+    <div id="notes"></div></div>
 </div>
 <div class="card" style="margin-top:12px"><h2>گفت‌وگو با جارویس</h2>
   <div id="chat"></div>
@@ -177,10 +204,16 @@ async function tick(){try{
 async function loadMem(){try{const m=await (await fetch('/api/memory?limit=12')).json();
   if(Array.isArray(m))$('mem').innerHTML=m.map(f=>`<div>• ${f.text} <span style="opacity:.6">(${f.date})</span></div>`).join('');
 }catch(e){}}
+async function loadPro(){try{const p=await (await fetch('/api/proactive')).json();
+  if(p.autonomy!=null){$('aut').value=p.autonomy;$('autv').textContent=p.autonomy;}
+  const b=p.budget||{};$('budget').textContent=`امروز ${b.calls||0} تماس · ${(b.usd||0).toFixed(3)}$`+(b.cap_usd?` / ${b.cap_usd}$`:'');
+  $('notes').innerHTML=(p.notifications||[]).slice(0,6).map(n=>`<div style="font-size:12px;color:${n.level==='warn'?'var(--warn)':'var(--dim)'}">🔔 [${n.at}] ${n.text}</div>`).join('')||'<div style="color:var(--dim);font-size:12px">اعلانی نیست</div>';
+}catch(e){}}
+async function setAut(v){await fetch('/api/autonomy',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({level:+v})});$('autv').textContent=v;}
 async function send(e){e.preventDefault();const t=$('msg').value.trim();if(!t)return;
   $('msg').value='';$('chat').innerHTML+=`<div class="u">▸ ${t}</div>`;
   $('chat').scrollTop=1e9;
   const r=await (await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text:t})})).json();
   $('chat').innerHTML+=`<div class="j">◂ ${r.reply||'…'}</div>`;$('chat').scrollTop=1e9;loadMem();}
-tick();loadMem();setInterval(tick,2000);setInterval(loadMem,15000);
+tick();loadMem();loadPro();setInterval(tick,2000);setInterval(loadMem,15000);setInterval(loadPro,5000);
 </script></body></html>"""

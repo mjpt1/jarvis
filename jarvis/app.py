@@ -56,6 +56,9 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
     from .integrations import registry as _integrations
     _integrations.setup(cfg)
 
+    from .proactive import engine as _proactive
+    _proactive.configure(cfg)
+
     engine = CommandEngine(cfg)
 
     if cfg.mission_enabled:
@@ -105,6 +108,10 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
         from .web import available as _web_ok, run_server as _web_run
         if _web_ok():
             threading.Thread(target=_web_run, args=(cfg,), daemon=True).start()
+
+    if cfg.proactive_enabled and cfg.autonomy_level > 0:
+        from .proactive.engine import proactive_worker
+        threading.Thread(target=proactive_worker, args=(cfg,), daemon=True).start()
 
     if cfg.mission_enabled:
         def _resume():

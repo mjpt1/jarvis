@@ -38,7 +38,7 @@ jarvis = "jarvis.__main__:main"
 
 [tool.setuptools]
 packages = ["jarvis", "jarvis.hud", "jarvis.memory", "jarvis.missions",
-            "jarvis.integrations", "jarvis.web"]
+            "jarvis.integrations", "jarvis.web", "jarvis.proactive"]
 
 [tool.setuptools.package-data]
 jarvis = ["assets/fonts/*.ttf"]

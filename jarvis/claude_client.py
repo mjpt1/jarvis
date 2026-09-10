@@ -70,6 +70,14 @@ def _tools_schema():
 
 
 def _post(payload: dict, timeout: int = 20) -> dict | None:
+    try:
+        from .proactive.budget import BUDGET
+        if not BUDGET.allowed():
+            log.warning("بودجه‌ی روزانه‌ی Claude تمام شده — تماس رد شد.")
+            return None
+    except Exception:
+        BUDGET = None
+
     body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(_API_URL, data=body, headers={
         "content-type": "application/json",
@@ -78,10 +86,18 @@ def _post(payload: dict, timeout: int = 20) -> dict | None:
     })
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
-            return json.loads(r.read().decode())
+            data = json.loads(r.read().decode())
     except Exception as exc:  # pragma: no cover - شبکه
         log.warning("تماس با Claude ناموفق بود: %s", exc)
         return None
+
+    if BUDGET is not None:
+        try:
+            u = data.get("usage", {})
+            BUDGET.record(int(u.get("input_tokens", 0)), int(u.get("output_tokens", 0)))
+        except Exception:
+            pass
+    return data
 
 
 def _text_of(data: dict | None) -> str:
