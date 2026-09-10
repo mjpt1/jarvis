@@ -18,6 +18,12 @@ def main(argv=None) -> int:
     parser.add_argument("--no-camera", action="store_true", help="غیرفعال کردن دوربین")
     parser.add_argument("--no-voice", action="store_true", help="غیرفعال کردن تشخیص گفتار")
     parser.add_argument("--debug", action="store_true", help="نمایش HUD دیباگ از ابتدا")
+    parser.add_argument("--big-voice", action="store_true",
+                        help="استفاده از مدل بزرگِ فارسیِ Vosk (دقیق‌تر، ~۱.۴ گیگ دانلود)")
+    parser.add_argument("--voice-model", default=None,
+                        help="نامِ مدلِ Vosk دلخواه")
+    parser.add_argument("--onboard", action="store_true",
+                        help="اجرای دوباره‌ی آشناییِ اولیه")
     parser.add_argument("--smoke-frames", type=int, default=None,
                         help="فقط N فریم رندر کن و خارج شو (برای تست)")
     args = parser.parse_args(argv)
@@ -30,6 +36,13 @@ def main(argv=None) -> int:
         path = cfg.write_example()
         print(f"فایل نمونه ساخته شد: {path}")
         return 0
+    if args.onboard:
+        from .onboarding import OWNER_FILE
+        OWNER_FILE.unlink(missing_ok=True)
+    if args.big_voice:
+        cfg.vosk_model_name = "vosk-model-fa-0.42"
+    if args.voice_model:
+        cfg.vosk_model_name = args.voice_model
 
     if args.windowed:
         cfg.fullscreen = False

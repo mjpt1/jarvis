@@ -85,7 +85,7 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
         audio_q.put(bytes(indata))
 
     recognizer = vosk.KaldiRecognizer(model, cfg.sample_rate)
-    recognizer.SetWords(False)
+    recognizer.SetWords(True)          # برای گرفتنِ اطمینانِ هر کلمه
 
     # شناسگرِ محدود فقط برای کلمه‌ی بیدارباش — دقتِ صدا زدن را بالا می‌برد
     wake_rec = None
@@ -225,10 +225,13 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
 
             with STATE.lock:
                 STATE.partial_text = ""
-            text = json.loads(recognizer.Result()).get("text", "").strip()
+            res = json.loads(recognizer.Result())
+            text = res.get("text", "").strip()
             if not text:
                 continue
-            log.info("شنیده شد: %r  (convo=%s)", text, convo)
+            words = res.get("result", [])
+            conf = (sum(w.get("conf", 1.0) for w in words) / len(words)) if words else 1.0
+            log.info("شنیده شد: %r  (اطمینان≈%.2f، convo=%s)", text, conf, convo)
             with STATE.lock:
                 STATE.last_heard_text = text
                 onboarding_on = STATE.onboarding_active
@@ -252,7 +255,12 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
                 if any(w in norm for w in CONFIRM_YES):
                     with STATE.lock:
                         STATE.pending_confirm_action = None
-                    engine.run_confirmed(pending)
+                    if pending.startswith("cmd::"):
+                        c = getattr(engine, "_pending_cmd", None)
+                        if c is not None:
+                            engine._run_command(c, "")
+                    else:
+                        engine.run_confirmed(pending)
                     _drain()
                     continue
                 if any(w in norm for w in CONFIRM_NO):
@@ -303,6 +311,19 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
 
             elif convo:
                 # در حالت مکالمه هر جمله مستقیماً دستور تلقی می‌شود
+                cmd, score = engine.match_scored(text)
+                if cmd is None and conf < cfg.min_confidence and len(text.split()) <= 4:
+                    log.info("  نادیده (اطمینانِ پایین %.2f): %r", conf, text)
+                    _drain()
+                    continue
+                if cmd is not None and cfg.fuzzy_threshold > score >= cfg.near_miss_floor:
+                    with STATE.lock:
+                        STATE.pending_confirm_action = f"cmd::{cmd.name}"
+                        STATE.pending_confirm_since = time.time()
+                    engine._pending_cmd = cmd
+                    tts.say(f"منظورتون «{cmd.keywords[0]}» بود {cfg.user_title}؟ بگید بله یا نه.")
+                    _drain()
+                    continue
                 ok = engine.handle(text)
                 log.info("  اجرا در حالت مکالمه: %r -> %s", text, ok)
                 if not ok and cfg.nag_on_unknown:
@@ -312,7 +333,9 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
             elif awaiting_since and time.time() - awaiting_since < cfg.command_timeout:
                 awaiting_since = None
                 _set_listen(False)
-                if not engine.handle(text):
+                if conf < cfg.min_confidence and engine.match(text) is None:
+                    tts.say(f"واضح نشنیدم {cfg.user_title}، دوباره بفرمایید.")
+                elif not engine.handle(text):
                     tts.say(random.choice(engine.unknown_lines))
                 _drain()
             # وگرنه: نادیده گرفته می‌شود

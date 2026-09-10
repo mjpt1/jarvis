@@ -538,14 +538,34 @@ class CommandEngine:
         return True
 
     def match(self, text: str) -> Command | None:
-        best: tuple[float, Command] | None = None
+        cmd, _ = self.match_scored(text, threshold=self.cfg.fuzzy_threshold)
+        return cmd
+
+    def match_scored(self, text: str, threshold: float | None = None):
+        """(نزدیک‌ترین دستور, بهترین نسبتِ شباهت). آستانه = near_miss_floor تا همه را ببینیم."""
+        from .text_fa import similarity
+        floor = threshold if threshold is not None else self.cfg.near_miss_floor
+        best_cmd, best_score = None, 0.0
         for cmd in self.commands:
             for kw in cmd.keywords:
-                if fuzzy_contains(text, kw, self.cfg.fuzzy_threshold):
-                    score = len(normalize(kw))
-                    if best is None or score > best[0]:
-                        best = (score, cmd)
-        return best[1] if best else None
+                if fuzzy_contains(text, kw, floor):
+                    sc = max(similarity(text, kw), 0.5 + len(normalize(kw)) / 200)
+                    # وزن‌دهی به تطبیقِ زیررشته‌ی دقیق
+                    if normalize(kw) in normalize(text):
+                        sc = max(sc, 0.9)
+                    if sc > best_score:
+                        best_cmd, best_score = cmd, sc
+        return best_cmd, best_score
+
+    def _run_command(self, cmd: Command, text: str) -> None:
+        STATE.log(cmd.name)
+        with STATE.lock:
+            STATE.tool_call_count += 1
+        try:
+            cmd.handler(text) if cmd.wants_text else cmd.handler()
+        except Exception as exc:
+            log.exception("اجرای دستور %s خطا داد: %s", cmd.name, exc)
+            tts.say(f"{self.title}، در اجرای دستور مشکلی پیش اومد.")
 
     def handle(self, text: str) -> bool:
         """True یعنی عبارت شناخته و اجرا شد."""
@@ -558,14 +578,7 @@ class CommandEngine:
             return True
         cmd = self.match(text)
         if cmd:
-            STATE.log(cmd.name)
-            with STATE.lock:
-                STATE.tool_call_count += 1
-            try:
-                cmd.handler(text) if cmd.wants_text else cmd.handler()
-            except Exception as exc:
-                log.exception("اجرای دستور %s خطا داد: %s", cmd.name, exc)
-                tts.say(f"{self.title}، در اجرای دستور مشکلی پیش اومد.")
+            self._run_command(cmd, text)
             return True
         # مأموریتِ چندمرحله‌ای؟
         if self.cfg.mission_enabled and _looks_like_mission(text):

@@ -68,6 +68,8 @@ class Config:
     wake_fuzzy: float = 0.62               # آستانه‌ی نرم برای تطبیقِ کلمه‌ی بیدارباش
     wake_min_level: float = 0.16           # حداقل بلندیِ صدا برای پذیرشِ بیدارباش (فیلترِ تلویزیون/نویز)
     fuzzy_threshold: float = 0.78          # آستانه‌ی تطبیق فازی دستورها
+    near_miss_floor: float = 0.6           # بینِ این و fuzzy_threshold: «منظورتون X بود؟»
+    min_confidence: float = 0.55           # اطمینانِ کمترِ Vosk -> جمله‌ی نامفهوم نادیده گرفته شود
 
     # حالت مکالمه‌ی پیوسته: یک بار «جارویس» بگو، بعد همیشه منتظر دستور بماند
     conversation_mode: bool = True
