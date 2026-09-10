@@ -105,6 +105,7 @@ class Config:
     # --- ابزارها (فاز ۲) ---
     web_enabled: bool = True               # جست‌وجو و خواندنِ صفحه‌ی وب (بدون کلید)
     web_max_chars: int = 4000              # سقفِ متنِ استخراج‌شده از یک صفحه
+    web_proxy: str = ""                    # پروکسیِ اختیاری برای جست‌وجوی وب (معمولاً لازم نیست)
 
     fs_enabled: bool = True
     fs_whitelist: list[str] = field(default_factory=list)   # مسیرهای مجاز؛ خالی = فقط ~/JarvisFiles

@@ -21,7 +21,7 @@ log = get_logger("integrations")
 
 def setup(cfg: Config) -> None:
     if cfg.web_enabled:
-        web.configure(cfg.web_max_chars)
+        web.configure(cfg.web_max_chars, cfg.web_proxy)
     if cfg.fs_enabled:
         filesystem.configure(cfg.fs_whitelist, cfg.fs_allow_write)
     shell.configure(cfg.cli_enabled, cfg.cli_whitelist)
