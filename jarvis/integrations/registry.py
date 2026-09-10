@@ -35,7 +35,8 @@ def setup(cfg: Config) -> None:
     if cfg.notion_enabled:
         notion_ws.configure(cfg.notion_token)
     if cfg.telegram_enabled:
-        telegram_bot.configure(cfg.telegram_bot_token, cfg.telegram_owner_id)
+        telegram_bot.configure(cfg.telegram_bot_token, cfg.telegram_owner_id,
+                               cfg.telegram_proxy)
 
     active = status(cfg)
     log.info("ادغام‌های فعال: %s", "، ".join(k for k, v in active.items() if v) or "هیچ‌کدام")

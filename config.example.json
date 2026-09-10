@@ -68,6 +68,7 @@
   "telegram_enabled": true,
   "telegram_bot_token": "",
   "telegram_owner_id": 0,
+  "telegram_proxy": "",
 
   "web_dashboard_enabled": true,
   "web_dashboard_host": "127.0.0.1",

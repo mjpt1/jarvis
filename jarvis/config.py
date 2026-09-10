@@ -135,6 +135,8 @@ class Config:
     telegram_enabled: bool = True
     telegram_bot_token: str = ""
     telegram_owner_id: int = 0             # فقط این کاربر می‌تواند با بات حرف بزند
+    telegram_proxy: str = ""               # اگر api.telegram.org فیلتر است:
+                                           #   "http://127.0.0.1:PORT" یا "socks5://127.0.0.1:PORT"
 
     # --- داشبورد وب (فاز ۴) ---
     web_dashboard_enabled: bool = True

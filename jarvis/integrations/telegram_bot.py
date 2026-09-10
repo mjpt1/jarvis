@@ -18,11 +18,34 @@ log = get_logger("telegram")
 
 _TOKEN = ""
 _OWNER = 0
+_PROXY = ""
+_opener = None
 
 
-def configure(token: str, owner_id: int) -> None:
-    global _TOKEN, _OWNER
-    _TOKEN, _OWNER = token, owner_id
+def configure(token: str, owner_id: int, proxy: str = "") -> None:
+    global _TOKEN, _OWNER, _PROXY, _opener
+    _TOKEN, _OWNER, _PROXY = token, owner_id, (proxy or "").strip()
+    _opener = _build_opener(_PROXY)
+
+
+def _build_opener(proxy: str):
+    if not proxy:
+        return urllib.request.build_opener()
+    if proxy.startswith(("socks5://", "socks4://", "socks://", "socks5h://")):
+        try:
+            import socks  # PySocks
+            from sockshandler import SocksiPyHandler
+        except Exception:
+            log.warning("برای پروکسیِ SOCKS باید PySocks نصب شود: pip install pysocks")
+            return urllib.request.build_opener()
+        kind = socks.SOCKS4 if proxy.startswith("socks4") else socks.SOCKS5
+        rest = proxy.split("://", 1)[1]
+        host, _, port = rest.partition(":")
+        return urllib.request.build_opener(
+            SocksiPyHandler(kind, host, int(port or 1080), rdns=True))
+    # پروکسیِ HTTP
+    return urllib.request.build_opener(
+        urllib.request.ProxyHandler({"http": proxy, "https": proxy}))
 
 
 def available() -> bool:
@@ -33,7 +56,8 @@ def _api(method: str, **params) -> dict:
     url = f"https://api.telegram.org/bot{_TOKEN}/{method}"
     data = urllib.parse.urlencode(params).encode()
     req = urllib.request.Request(url, data=data)
-    with urllib.request.urlopen(req, timeout=40) as r:
+    opener = _opener or urllib.request.build_opener()
+    with opener.open(req, timeout=40) as r:
         return json.loads(r.read().decode())
 
 
