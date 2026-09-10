@@ -17,6 +17,7 @@ class SharedState:
     current_subtitle: str = ""
     cache_ready: bool = False
     cache_progress: tuple[int, int] = (0, 1)
+    download_status: str = ""       # وضعیتِ دانلودِ مدل‌ها (روی HUD نمایش داده می‌شود)
     audio_muted: bool = False
     awaiting_command: bool = False
     conversation_active: bool = False   # حالت مکالمه‌ی پیوسته فعال است

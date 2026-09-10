@@ -1,8 +1,8 @@
 import json
 
-from jarvis.config import Config
 from jarvis import onboarding
-from jarvis.onboarding import Onboarding
+from jarvis.config import Config
+from jarvis.onboarding import Onboarding, _clean_title
 from jarvis.state import STATE
 
 
@@ -21,29 +21,49 @@ def test_needs_onboarding(tmp_path, monkeypatch):
     assert not onboarding.needs_onboarding()
 
 
-def test_full_flow_learns_owner(tmp_path, monkeypatch):
+def test_clean_title():
+    assert _clean_title("همون رئیس صدام کن") == "رئیس"
+    assert _clean_title("علی") == "علی"
+    assert _clean_title("نه اسم کوچیکم و صدا کن") == ""     # مبهم -> رد
+
+
+def test_confirmed_flow(tmp_path, monkeypatch):
     cfg = _cfg(tmp_path, monkeypatch)
     ob = Onboarding(cfg)
     ob.start()
     assert STATE.onboarding_active
-    done, _ = ob.submit("علی")
-    assert not done
-    done, _ = ob.submit("رئیس")
-    done, _ = ob.submit("تهران")
-    done, msg = ob.submit("مدیریت ایمیل و تقویم")
-    assert done
-    assert not STATE.onboarding_active
+    # name
+    _, m = ob.submit("علی", conf=0.9)
+    assert "درسته" in m
+    _, m = ob.submit("بله")
+    # title
+    _, _ = ob.submit("رئیس", conf=0.9)
+    _, _ = ob.submit("بله")
+    # location
+    _, _ = ob.submit("تهران", conf=0.9)
+    _, _ = ob.submit("بله")
+    # focus
+    _, _ = ob.submit("مدیریت ایمیل و تقویم", conf=0.9)
+    done, _ = ob.submit("بله")
+    assert done and not STATE.onboarding_active
     assert cfg.user_title == "رئیس"
     data = json.loads((tmp_path / "owner.json").read_text(encoding="utf-8"))
     assert data["name"] == "علی" and data["location"] == "تهران"
-    assert data["onboarded"] is True
 
 
-def test_skip_answer(tmp_path, monkeypatch):
+def test_reject_and_reask(tmp_path, monkeypatch):
     cfg = _cfg(tmp_path, monkeypatch)
     ob = Onboarding(cfg)
     ob.start()
-    ob.submit("رد کن")            # name skipped
-    data_i = ob.i
-    assert data_i == 1
-    assert "name" not in ob.answers
+    ob.submit("فلان", conf=0.9)
+    _, m = ob.submit("نه")                # رد -> دوباره بپرس
+    assert "دوباره" in m
+    assert ob.phase == "ask" and ob.i == 0
+
+
+def test_low_confidence_reasks(tmp_path, monkeypatch):
+    cfg = _cfg(tmp_path, monkeypatch)
+    ob = Onboarding(cfg)
+    ob.start()
+    _, m = ob.submit("همهمه", conf=0.2)   # اطمینانِ پایین
+    assert "نشنیدم" in m and ob.i == 0

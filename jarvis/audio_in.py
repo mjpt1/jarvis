@@ -239,7 +239,7 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
             # ۰) پاسخ به سؤالِ آشناییِ اولیه
             ob = getattr(engine, "onboarding", None)
             if onboarding_on and ob is not None:
-                done, nxt = ob.submit(text)
+                done, nxt = ob.submit(text, conf)
                 tts.say(nxt)
                 _drain()
                 if done:

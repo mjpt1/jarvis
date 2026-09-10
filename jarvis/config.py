@@ -54,6 +54,8 @@ class Config:
     # --- صدا / تشخیص گفتار ---
     enable_voice: bool = True
     vosk_model_name: str = "vosk-model-small-fa-0.42"
+    auto_upgrade_voice_model: bool = True   # مدلِ بزرگِ فارسی را در پس‌زمینه دانلود کن
+    big_voice_model: str = "vosk-model-fa-0.42"
     sample_rate: int = 16000
     wake_words: list[str] = field(default_factory=lambda: [
         "جارویس", "جارویز", "جاروی", "جاروس", "جارویش", "جاریس", "جادو",

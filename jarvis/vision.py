@@ -192,6 +192,12 @@ def camera_worker(cfg: Config, emit, engine=None) -> None:
                 running_mode=mp_vision.RunningMode.VIDEO, num_hands=1)
             gesture_rec = mp_vision.GestureRecognizer.create_from_options(gopts)
             log.info("تشخیصِ حرکاتِ دست فعال شد.")
+            if cfg.alive_enabled:
+                try:
+                    from . import tts
+                    tts.say("حالا حرکاتِ دستتون رو هم می‌بینم.")
+                except Exception:
+                    pass
         except Exception as exc:
             log.warning("[JRV-VISION-003] تشخیصِ حرکاتِ دست فعال نشد: %s", exc)
 

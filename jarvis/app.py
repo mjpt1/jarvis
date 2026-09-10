@@ -107,6 +107,9 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
     if cfg.alive_enabled:
         from .persona import idle_worker
         threading.Thread(target=idle_worker, args=(cfg, engine), daemon=True).start()
+
+    from .model_manager import background_worker as _model_bg
+    threading.Thread(target=_model_bg, args=(cfg,), daemon=True).start()
     if cfg.enable_voice:
         threading.Thread(target=voice_worker, args=(cfg, engine), daemon=True).start()
 

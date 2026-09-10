@@ -126,6 +126,7 @@ class MinimalHUD:
             music_np = getattr(s, "now_playing", "")
             ob_active = s.onboarding_active
             ob_q = s.onboarding_question
+            dl = s.download_status
         level = max(mic, tts_lvl)
         title = getattr(cfg, "user_title", "قربان")
 
@@ -188,6 +189,11 @@ class MinimalHUD:
                  anchor="midtop")
             blit(screen, fonts.fa_small, "پاسخ‌تون رو بگید…", _BLUE,
                  (w // 2, h - 150), anchor="midtop")
+
+        # نوارِ دانلودِ مدل (اگر در جریان است) — بالای نوارِ پایین
+        if dl:
+            blit(screen, fonts.fa_small, f"⬇ {dl}", _BLUE_DIM, (26, h - 118),
+                 anchor="bottomleft")
 
         # پایین-راست: آخرین پاسخ / وضعیت
         status_line = (subtitle if speaking else
