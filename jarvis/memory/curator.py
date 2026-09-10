@@ -6,8 +6,8 @@ import json
 import re
 
 from ..logging_setup import get_logger
-from .store import MemoryStore, get_store
 from . import markdown_mirror
+from .store import MemoryStore, get_store
 
 log = get_logger("memory")
 

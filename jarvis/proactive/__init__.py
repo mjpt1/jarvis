@@ -8,8 +8,8 @@
 """
 
 from .budget import BUDGET, Budget
-from .notifications import NOTIFY, Notification, autonomy_allows
 from .engine import ProactiveEngine, proactive_worker
+from .notifications import NOTIFY, Notification, autonomy_allows
 
 __all__ = ["BUDGET", "Budget", "NOTIFY", "Notification", "autonomy_allows",
            "ProactiveEngine", "proactive_worker"]

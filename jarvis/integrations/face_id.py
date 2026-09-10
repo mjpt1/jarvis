@@ -49,6 +49,7 @@ def enroll(image_path: str) -> str:
     """یک عکس را به‌عنوان چهره‌ی مرجعِ صاحب ذخیره می‌کند."""
     try:
         import shutil
+
         import face_recognition
         img = face_recognition.load_image_file(image_path)
         if not face_recognition.face_encodings(img):

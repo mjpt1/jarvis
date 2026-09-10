@@ -1,0 +1,36 @@
+# این فایل را به `.github/workflows/ci.yml` منتقل کنید تا GitHub Actions فعال شود.
+# (توکنِ فعلیِ gh مجوزِ workflow ندارد؛ یا از وب آپلود کنید یا:
+#   gh auth refresh -s workflow  سپس فایل را جابه‌جا و push کنید.)
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: |
+          python -m pip install -U pip
+          pip install pygame numpy beautifulsoup4 arabic-reshaper python-bidi \
+                      pillow python-dotenv "fastapi<0.116" "starlette<0.42" \
+                      httpx pytest ruff
+      - name: Lint (ruff)
+        run: ruff check jarvis scripts
+      - name: Error-code registry check
+        run: python scripts/check_registry.py
+      - name: Tests
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+        run: pytest -q -p no:cacheprovider

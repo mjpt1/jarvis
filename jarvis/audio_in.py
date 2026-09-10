@@ -11,11 +11,11 @@ import math
 import queue
 import time
 
+from . import tts
+from .commands import CONFIRM_NO, CONFIRM_YES, CommandEngine
 from .config import Config
 from .logging_setup import get_logger
 from .state import STATE
-from . import tts
-from .commands import CommandEngine, CONFIRM_NO, CONFIRM_YES
 from .text_fa import fuzzy_contains, normalize
 
 log = get_logger("audio")
@@ -60,6 +60,7 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
     try:
         import sounddevice as sd
         import vosk
+
         from .models import ensure_vosk_model
     except Exception as exc:
         log.warning("ماژول‌های صوتی در دسترس نیستند: %s", exc)
@@ -69,13 +70,13 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
     try:
         model_dir = ensure_vosk_model(cfg.vosk_model_name)
     except Exception as exc:
-        log.warning("مدل صوتی دانلود نشد — تشخیص گفتار غیرفعال: %s", exc)
+        log.warning("[JRV-AUDIO-003] مدل صوتی دانلود نشد — تشخیص گفتار غیرفعال: %s", exc)
         return
 
     try:
         model = vosk.Model(str(model_dir))
     except Exception as exc:
-        log.warning("بارگذاری مدل صوتی ناموفق بود: %s", exc)
+        log.warning("[JRV-AUDIO-002] بارگذاری مدل صوتی ناموفق بود: %s", exc)
         return
 
     audio_q: queue.Queue[bytes] = queue.Queue()
@@ -107,7 +108,7 @@ def voice_worker(cfg: Config, engine: CommandEngine) -> None:
         stream = sd.RawInputStream(samplerate=cfg.sample_rate, blocksize=8000,
                                    dtype="int16", channels=1, callback=_cb)
     except Exception as exc:
-        log.warning("باز کردن میکروفون ناموفق بود: %s", exc)
+        log.warning("[JRV-AUDIO-001] باز کردن میکروفون ناموفق بود: %s", exc)
         return
 
     with STATE.lock:

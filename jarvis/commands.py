@@ -10,16 +10,19 @@ from __future__ import annotations
 import random
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
+from . import claude_client, reports, system_actions, tts
 from .config import Config
 from .logging_setup import get_logger
-from .state import STATE
-from . import claude_client, reports, system_actions, tts
 from .music import MusicPlayer
+from .state import STATE
 from .text_fa import (
-    extract_reminder_message, fuzzy_contains, normalize, parse_duration_seconds,
+    extract_reminder_message,
+    fuzzy_contains,
+    normalize,
+    parse_duration_seconds,
     strip_phrase,
 )
 
@@ -103,6 +106,16 @@ class CommandEngine:
                       lambda: say(self._command_center_line())))
             C(Command("QUIET_NIGHT", ["تا صبح ساکت باش", "شب‌بخیر", "دیگه چیزی نگو تا صبح"],
                       self._cmd_quiet))
+
+        if self.cfg.mission_enabled:
+            C(Command("SKILL_SAVE", ["این کار رو مهارت کن", "این رو به عنوان مهارت ذخیره کن",
+                                     "این کارو یاد بگیر به اسم"],
+                      self._cmd_skill_save, wants_text=True))
+            C(Command("SKILL_RUN", ["مهارت رو اجرا کن", "مهارتِ", "کارِ", "اون مهارتو انجام بده"],
+                      self._cmd_skill_run, wants_text=True))
+            C(Command("SKILL_LIST", ["چه مهارت‌هایی داری", "مهارت‌هات چیه",
+                                     "چه کارهایی بلدی"],
+                      lambda: say(self._skills().list_spoken())))
 
         if self.cfg.memory_enabled:
             C(Command("REMEMBER", ["این رو یادت باشه", "یادت باشه که", "به خاطر بسپار",
@@ -207,10 +220,8 @@ class CommandEngine:
     # ------------------------------------------------------------------
     def _build_integrations(self, C) -> None:
         """دستورهای صوتیِ ادغام‌ها — فقط آن‌هایی که واقعاً در دسترس‌اند."""
-        T = self.title
         say = tts.say
-        from .integrations import (filesystem, google_ws, notion_ws, spotify_ws,
-                                   vision_tools, web)
+        from .integrations import google_ws, notion_ws, spotify_ws, vision_tools, web
 
         if self.cfg.vision_enabled and vision_tools.available():
             C(Command("SCENE", ["چی می‌بینی", "صحنه رو توصیف کن", "رو صفحه چی هست",
@@ -257,7 +268,6 @@ class CommandEngine:
 
     def _cmd_web_answer(self, text: str):
         from .integrations import web
-        from .text_fa import strip_phrase
         q = text
         for p in ("تو اینترنت بگرد", "تو وب سرچ کن", "از اینترنت بپرس",
                   "تو گوگل بگرد و بگو", "جوابش رو از اینترنت پیدا کن", "و بگو", "ببین"):
@@ -267,7 +277,6 @@ class CommandEngine:
 
     def _cmd_spotify_search(self, text: str):
         from .integrations import spotify_ws
-        from .text_fa import strip_phrase
         q = text
         for p in ("تو اسپاتیفای پخش کن", "از اسپاتیفای بذار", "آهنگ", "رو"):
             q = strip_phrase(q, p)
@@ -294,7 +303,6 @@ class CommandEngine:
 
     def _cmd_notion(self, text: str):
         from .integrations import notion_ws
-        from .text_fa import strip_phrase
         q = text
         for p in ("تو نوشن بگرد", "تو نوشن پیدا کن", "از نوشن برام بیار", "دنبال", "درباره"):
             q = strip_phrase(q, p)
@@ -312,6 +320,32 @@ class CommandEngine:
                                       lambda q="": system_actions.google_search(q, self.title))
 
     # ------------------------------------------------------------------
+    # ---------------- مهارت‌ها ----------------
+    def _skills(self):
+        if not hasattr(self, "_skill_mgr"):
+            from .skills.manager import SkillManager
+            self._skill_mgr = SkillManager(self)
+        return self._skill_mgr
+
+    def _cmd_skill_save(self, text: str):
+        name = text
+        for p in ("این کار رو مهارت کن", "این رو به عنوان مهارت ذخیره کن",
+                  "این کارو یاد بگیر به اسم", "به اسم", "به نام", "اسمش"):
+            name = strip_phrase(name, p)
+        name = name.strip(" ،.") or "مهارت بی‌نام"
+        tts.say(self._skills().save_from_last_mission(name))
+
+    def _cmd_skill_run(self, text: str):
+        name = text
+        for p in ("مهارت رو اجرا کن", "اون مهارتو انجام بده", "مهارتِ", "مهارت",
+                  "کارِ", "رو اجرا کن", "رو انجام بده"):
+            name = strip_phrase(name, p)
+        name = name.strip(" ،.")
+        if not name:
+            tts.say(f"{self.title}، کدوم مهارت؟")
+            return
+        tts.say(self._skills().run(name))
+
     # ---------------- پیش‌کنشی / حاکمیت ----------------
     def _budget_line(self) -> str:
         from .proactive.budget import BUDGET
@@ -319,7 +353,7 @@ class CommandEngine:
 
     def _cmd_set_autonomy(self, text: str):
         from .proactive import notifications
-        from .text_fa import words_to_number, normalize
+        from .text_fa import normalize, words_to_number
         n = words_to_number(text)
         norm = normalize(text)
         if n is None:
@@ -339,10 +373,8 @@ class CommandEngine:
         tts.say(f"باشه {self.title}، سطحِ خودمختاری روی {lvl} — {desc[lvl]}.")
 
     def _command_center_line(self) -> str:
-        from .proactive.engine import engine as _pe
         from .proactive.budget import BUDGET
-        from .proactive.notifications import recent, autonomy
-        pe = _pe()
+        from .proactive.notifications import autonomy, recent
         parts = [f"سطحِ خودمختاری {autonomy()}"]
         s = BUDGET.summary()
         parts.append(f"امروز {s['calls']} تماس، {s['usd']:.3f} دلار")
@@ -360,7 +392,6 @@ class CommandEngine:
 
     # ---------------- حافظه ----------------
     def _cmd_remember(self, text: str):
-        from .text_fa import strip_phrase
         content = text
         for p in ("این رو یادت باشه", "یادت باشه که", "به خاطر بسپار",
                   "یادداشت کن که", "به یاد داشته باش", "ذخیره کن که",
@@ -375,8 +406,8 @@ class CommandEngine:
         tts.say(f"باشه {self.title}، یادم می‌مونه: {content}")
 
     def _cmd_recall(self, text: str):
-        from .text_fa import normalize
         from .memory.store import get_store
+        from .text_fa import normalize
         topic = normalize(text)
         for p in ("چی یادته درباره", "درباره‌ش چی می‌دونی", "چی می‌دونی درباره",
                   "راجع بهش چی یادته", "چی یادت مونده از", "درباره", "راجع به", "ی"):

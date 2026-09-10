@@ -73,7 +73,7 @@ def _post(payload: dict, timeout: int = 20) -> dict | None:
     try:
         from .proactive.budget import BUDGET
         if not BUDGET.allowed():
-            log.warning("بودجه‌ی روزانه‌ی Claude تمام شده — تماس رد شد.")
+            log.warning("[JRV-BUD-001] بودجه‌ی روزانه‌ی Claude تمام شده — تماس رد شد.")
             return None
     except Exception:
         BUDGET = None

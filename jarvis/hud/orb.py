@@ -52,7 +52,9 @@ class Orb:
         self.pband = []
         self.plat = []          # 0 در قطب، 1 روی استوا (دامنه‌ی بیشتر)
         for x, y, z in raw:
-            self.px.append(x); self.py.append(y); self.pz.append(z)
+            self.px.append(x)
+            self.py.append(y)
+            self.pz.append(z)
             azim = math.atan2(z, x)
             b = int((azim + math.pi) / math.tau * self.bands) % self.bands
             self.pband.append(b)
@@ -116,7 +118,9 @@ class Orb:
             x, y, z = self.px[i], self.py[i], self.pz[i]
             disp = bl[self.pband[i]] * (0.30 + 0.55 * self.plat[i])
             scale = 1.0 + disp
-            x *= scale; y *= scale; z *= scale
+            x *= scale
+            y *= scale
+            z *= scale
             # چرخش
             x, z = x * cosA - z * sinA, x * sinA + z * cosA
             y, z = y * cosB - z * sinB, y * sinB + z * cosB

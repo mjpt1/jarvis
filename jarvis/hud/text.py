@@ -31,7 +31,7 @@ def _render_cached(font_id: int, text: str, color: tuple, shaped: bool):
     return font.render(disp, True, color)
 
 
-_FONT_REGISTRY: dict[int, "pygame.font.Font"] = {}
+_FONT_REGISTRY: dict[int, pygame.font.Font] = {}
 
 
 def render(font, text: str, color, *, shaped: bool = True):

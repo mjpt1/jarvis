@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import threading
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from ..paths import MISSIONS_DB, ensure_dirs
 
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS steps (
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 class MissionStore:

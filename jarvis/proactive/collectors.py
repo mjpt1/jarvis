@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import datetime
-import time
 
 from ..config import Config
 from ..logging_setup import get_logger
@@ -74,7 +73,7 @@ class CalendarCollector(Collector):
             return
         try:
             svc = google_ws._svc("calendar", "v3")
-            now = datetime.datetime.now(datetime.timezone.utc)
+            now = datetime.datetime.now(datetime.UTC)
             end = now + datetime.timedelta(minutes=self.cfg.calendar_alert_minutes)
             res = svc.events().list(
                 calendarId="primary", timeMin=now.isoformat(), timeMax=end.isoformat(),

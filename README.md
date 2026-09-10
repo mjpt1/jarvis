@@ -157,6 +157,23 @@ python jarvis_v8.py           # معادل، برای Run در VS Code
 **مرکز فرمان:** «چه کارهایی داری» یا پنلِ داشبورد — سطحِ خودمختاری، بودجه،
 و آخرین اعلان‌ها.
 
+## مهارت‌ها و کیفیت (فاز ۶)
+
+**Skill Lab:** یک «مهارت» = یک مینی‌پلنِ نام‌دار (فهرستِ گام‌های tool+args) —
+کدِ دلخواه اجرا نمی‌شود، فقط ابزارهای شناخته‌شده. پیش از فعال‌سازی
+اعتبارسنجی و اجرای آزمایشیِ خواندنی می‌شوند.
+- «این کار رو مهارت کن به اسم …» (آخرین مأموریت را ذخیره می‌کند)
+- «مهارتِ … رو اجرا کن» · «چه مهارت‌هایی داری»
+- ذخیره در `~/.jarvis/data/skills.json`
+
+**رجیستریِ کد خطا:** هر خطای شناخته‌شده کدِ `JRV-<DOMAIN>-<NNN>` دارد
+(`jarvis/errors.py`)؛ `python scripts/check_registry.py` بررسی می‌کند همه‌ی
+کدهای استفاده‌شده ثبت شده باشند.
+
+**CI:** فایلِ `ci/ci.yml` را به `.github/workflows/ci.yml` منتقل کن تا روی هر
+push/PR اجرا شود — ruff + registry check + pytest (پایتون ۳.۱۱ و ۳.۱۲).
+لینت محلی: `ruff check jarvis scripts`.
+
 ## حالت مکالمه‌ی پیوسته
 
 به‌صورت پیش‌فرض روشن است (`conversation_mode` در config). کافی است **یک بار**
@@ -211,6 +228,9 @@ jarvis/
   missions/        موتور مأموریت — tools, store (SQLite), engine
   integrations/    web, filesystem, shell, google_ws, spotify_ws, notion_ws,
                    telegram_bot, vision_tools, face_id, registry
+  proactive/       budget, notifications, collectors, engine
+  skills/          Skill Lab — store, lab (اعتبارسنجی/اجرای آزمایشی), manager
+  errors.py        رجیستریِ کد خطا (JRV-...)
   brain.py         پاسخِ متنیِ مشترک (تلگرام + داشبورد)
   web/             داشبورد FastAPI
   vision.py        ترد دوربین + رویدادها

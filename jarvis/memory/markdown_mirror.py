@@ -34,7 +34,7 @@ def rebuild(store: MemoryStore) -> int:
 
     written = 0
     for cat, items in sorted(by_cat.items()):
-        lines = [f"---", f"category: {cat}", f"updated: {datetime.now().isoformat(timespec='seconds')}",
+        lines = ["---", f"category: {cat}", f"updated: {datetime.now().isoformat(timespec='seconds')}",
                  f"count: {len(items)}", "---", "", f"# {cat}", ""]
         for f in sorted(items, key=lambda x: x.created_at):
             tags = " ".join(f"#{t}" for t in f.tags)

@@ -34,7 +34,7 @@ def run(command: str, timeout: int = 20) -> str:
         return "دستوری داده نشد."
     prog = parts[0].lower().removesuffix(".exe")
     if prog not in _WHITELIST:
-        return (f"دستور «{prog}» در فهرستِ مجاز نیست. "
+        return (f"[JRV-INT-004] دستور «{prog}» در فهرستِ مجاز نیست. "
                 f"مجازها: {', '.join(sorted(_WHITELIST))}")
     try:
         proc = subprocess.run(parts, capture_output=True, text=True,

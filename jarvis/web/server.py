@@ -95,9 +95,9 @@ def _build_app():
     @app.get("/api/proactive")
     def proactive():
         try:
-            from ..proactive.engine import engine
             from ..proactive.budget import BUDGET
-            from ..proactive.notifications import recent, autonomy
+            from ..proactive.engine import engine
+            from ..proactive.notifications import autonomy, recent
             pe = engine()
             if pe is not None:
                 return pe.command_center()

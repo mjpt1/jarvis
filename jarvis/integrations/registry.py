@@ -4,8 +4,17 @@ from __future__ import annotations
 
 from ..config import Config
 from ..logging_setup import get_logger
-from . import (face_id, filesystem, google_ws, notion_ws, shell, spotify_ws,
-               telegram_bot, vision_tools, web)
+from . import (
+    face_id,
+    filesystem,
+    google_ws,
+    notion_ws,
+    shell,
+    spotify_ws,
+    telegram_bot,
+    vision_tools,
+    web,
+)
 
 log = get_logger("integrations")
 

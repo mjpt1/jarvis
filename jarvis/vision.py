@@ -123,10 +123,11 @@ class EventManager:
 def camera_worker(cfg: Config, emit) -> None:
     try:
         import cv2
-        import numpy as np
         import mediapipe as mp
+        import numpy as np
         from mediapipe.tasks import python as mp_python
         from mediapipe.tasks.python import vision as mp_vision
+
         from .models import ensure_face_landmarker
     except Exception as exc:
         log.warning("ماژول‌های دوربین در دسترس نیستند: %s", exc)
@@ -135,7 +136,7 @@ def camera_worker(cfg: Config, emit) -> None:
     try:
         model_path = ensure_face_landmarker()
     except Exception as exc:
-        log.warning("مدل چهره دانلود نشد — دوربین غیرفعال: %s", exc)
+        log.warning("[JRV-VISION-002] مدل چهره دانلود نشد — دوربین غیرفعال: %s", exc)
         return
 
     options = mp_vision.FaceLandmarkerOptions(
@@ -153,7 +154,7 @@ def camera_worker(cfg: Config, emit) -> None:
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     if not cap.isOpened():
-        log.warning("دوربین باز نشد (index=%s).", cfg.camera_index)
+        log.warning("[JRV-VISION-001] دوربین باز نشد (index=%s).", cfg.camera_index)
         landmarker.close()
         return
 

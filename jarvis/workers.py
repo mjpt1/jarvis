@@ -68,8 +68,8 @@ def nightly_consolidation_worker(cfg: Config) -> None:
         try:
             with STATE.lock:
                 turns = list(STATE.chat_history)
-            from .memory.curator import extract_from_turns
             from .memory import markdown_mirror
+            from .memory.curator import extract_from_turns
             from .memory.store import get_store
             n = extract_from_turns(turns)
             markdown_mirror.rebuild(get_store())

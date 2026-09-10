@@ -9,7 +9,7 @@ import pygame
 
 from ..state import STATE
 from . import theme
-from .text import blit, render
+from .text import blit
 
 
 def corner_ticks(screen, w, h, t):
@@ -185,6 +185,7 @@ _int_cache = {"t": 0.0, "items": []}
 def status_chips(screen, x, y, fonts):
     """نشانگرهای کوچک وضعیت دوربین/صدا/Claude/ادغام‌ها."""
     import time as _t
+
     from .. import claude_client
     with STATE.lock:
         cam, voice, tg = STATE.camera_enabled, STATE.voice_enabled, STATE.telegram_enabled
@@ -192,8 +193,7 @@ def status_chips(screen, x, y, fonts):
     if _t.time() - _int_cache["t"] > 8.0:
         _int_cache["t"] = _t.time()
         try:
-            from ..integrations import (face_id, google_ws, notion_ws, spotify_ws,
-                                        vision_tools, web)
+            from ..integrations import face_id, google_ws, notion_ws, spotify_ws, vision_tools, web
             _int_cache["items"] = [
                 ("وب", web.available()), ("جیمیل", google_ws.available()),
                 ("اسپاتیفای", spotify_ws.available()), ("نوشن", notion_ws.available()),

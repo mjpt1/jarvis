@@ -8,8 +8,8 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable
 
 from ..logging_setup import get_logger
 
@@ -61,7 +61,7 @@ class ToolRegistry:
 
 def build_default_registry(engine) -> ToolRegistry:
     """engine = CommandEngine — برای دسترسی به اقدام‌های موجود و TTS."""
-    from .. import tts, system_actions
+    from .. import system_actions, tts
     reg = ToolRegistry()
 
     def _say(text: str = "") -> ToolResult:
@@ -131,8 +131,15 @@ def build_default_registry(engine) -> ToolRegistry:
 
 
 def _add_integration_tools(reg: ToolRegistry) -> None:
-    from ..integrations import (filesystem, google_ws, notion_ws, shell,
-                                spotify_ws, vision_tools, web)
+    from ..integrations import (
+        filesystem,
+        google_ws,
+        notion_ws,
+        shell,
+        spotify_ws,
+        vision_tools,
+        web,
+    )
 
     if vision_tools.available():
         reg.add(Tool("describe_scene", "توصیفِ چیزی که روی صفحه/دوربین دیده می‌شود",

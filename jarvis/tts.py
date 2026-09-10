@@ -34,7 +34,7 @@ def configure(voice: str) -> None:
 
 
 def _key(text: str) -> str:
-    h = hashlib.sha1(f"{_VOICE}|{text}".encode("utf-8")).hexdigest()[:16]
+    h = hashlib.sha1(f"{_VOICE}|{text}".encode()).hexdigest()[:16]
     return h
 
 

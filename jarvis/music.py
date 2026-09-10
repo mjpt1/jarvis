@@ -5,9 +5,9 @@ from __future__ import annotations
 import os
 import random
 
+from . import tts
 from .logging_setup import get_logger
 from .state import STATE
-from . import tts
 
 log = get_logger("music")
 

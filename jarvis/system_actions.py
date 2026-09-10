@@ -13,10 +13,10 @@ import sys
 import time
 import webbrowser
 
+from . import tts
 from .logging_setup import get_logger
 from .paths import SCREENSHOT_DIR
 from .state import STATE
-from . import tts
 
 log = get_logger("actions")
 
@@ -144,7 +144,8 @@ def lock_screen(title: str) -> None:
 # ---------------- صدای سیستم (ویندوز) ----------------
 
 def _win_volume_iface():
-    from ctypes import cast, POINTER
+    from ctypes import POINTER, cast
+
     from comtypes import CLSCTX_ALL
     from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
     devices = AudioUtilities.GetSpeakers()

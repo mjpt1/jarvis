@@ -8,14 +8,14 @@ import time
 
 import pygame
 
-from .config import Config
-from .logging_setup import get_logger, setup
-from .state import STATE
 from . import claude_client, reports, tts
 from .commands import CommandEngine
+from .config import Config
 from .hud import widgets
 from .hud.orb import Orb
 from .hud.theme import Fonts
+from .logging_setup import get_logger, setup
+from .state import STATE
 
 log = get_logger("app")
 
@@ -81,8 +81,8 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
     orb = Orb((w, h), points=cfg.orb_points, bands=cfg.orb_bands)
 
     # --- تردهای پس‌زمینه ---
-    from .vision import camera_worker, event_lines
     from .audio_in import voice_worker
+    from .vision import camera_worker, event_lines
     from .workers import system_stats_worker, weather_worker
 
     prebuild_lines = engine.static_lines + event_lines(cfg.user_title)
@@ -105,7 +105,8 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
         threading.Thread(target=_tg_worker, daemon=True).start()
 
     if cfg.web_dashboard_enabled:
-        from .web import available as _web_ok, run_server as _web_run
+        from .web import available as _web_ok
+        from .web import run_server as _web_run
         if _web_ok():
             threading.Thread(target=_web_run, args=(cfg,), daemon=True).start()
 
@@ -209,8 +210,9 @@ def _cache_progress(done: int, total: int) -> None:
 
 
 def _fire_manual(name: str, title: str) -> None:
-    from .vision import EVENTS
     import random
+
+    from .vision import EVENTS
     line = random.choice(EVENTS[name]["lines"]).replace("{t}", title)
     STATE.log(f"TEST:{name}")
     tts.say(line)

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass, asdict, field, fields
+from dataclasses import asdict, dataclass, field, fields
 from typing import Any
 
 from .paths import CONFIG_FILE, LOCAL_CONFIG_FILE
@@ -168,7 +168,7 @@ class Config:
 
     # ------------------------------------------------------------------
     @classmethod
-    def load(cls) -> "Config":
+    def load(cls) -> Config:
         data: dict[str, Any] = {}
         for path in (CONFIG_FILE, LOCAL_CONFIG_FILE):
             if path.is_file():

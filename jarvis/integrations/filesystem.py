@@ -56,7 +56,7 @@ def roots_text() -> str:
 def list_dir(path: str = ".") -> str:
     p = _resolve(path)
     if p is None:
-        return f"مسیر مجاز نیست. فقط این‌ها مجازند: {roots_text()}"
+        return f"[JRV-INT-003] مسیر مجاز نیست. فقط این‌ها مجازند: {roots_text()}"
     if not p.is_dir():
         return "این یک پوشه نیست."
     items = sorted(p.iterdir(), key=lambda x: (x.is_file(), x.name.lower()))
@@ -71,7 +71,7 @@ def list_dir(path: str = ".") -> str:
 def read_file(path: str) -> str:
     p = _resolve(path)
     if p is None:
-        return f"مسیر مجاز نیست. مجاز: {roots_text()}"
+        return f"[JRV-INT-003] مسیر مجاز نیست. مجاز: {roots_text()}"
     if not p.is_file():
         return "فایل پیدا نشد."
     try:
@@ -85,7 +85,7 @@ def write_file(path: str, content: str) -> str:
         return "نوشتن در فایل غیرفعال است (fs_allow_write=false)."
     p = _resolve(path)
     if p is None:
-        return f"مسیر مجاز نیست. مجاز: {roots_text()}"
+        return f"[JRV-INT-003] مسیر مجاز نیست. مجاز: {roots_text()}"
     try:
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(content, encoding="utf-8")

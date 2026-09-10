@@ -118,18 +118,22 @@ def words_to_number(text: str):
     matched = False
     for w in words:
         if w in _UNITS:
-            current += _UNITS[w]; matched = True
+            current += _UNITS[w]
+            matched = True
         elif w in _TENS:
-            current += _TENS[w]; matched = True
+            current += _TENS[w]
+            matched = True
         elif w in _HUNDREDS:
-            current += _HUNDREDS[w]; matched = True
+            current += _HUNDREDS[w]
+            matched = True
         elif w in _SCALES:
             current = max(1, current) * _SCALES[w]
             total += current
             current = 0
             matched = True
         elif w in ("نیم", "نیمه"):
-            current += _HALF; matched = True
+            current += _HALF
+            matched = True
         else:
             continue
     if not matched:

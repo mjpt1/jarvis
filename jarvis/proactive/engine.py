@@ -6,7 +6,6 @@ import threading
 
 from ..config import Config
 from ..logging_setup import get_logger
-from ..state import STATE
 from .budget import BUDGET
 from .collectors import ALL_COLLECTORS
 from .notifications import configure as _cfg_notify

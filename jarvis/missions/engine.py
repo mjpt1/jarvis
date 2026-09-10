@@ -43,6 +43,7 @@ class MissionEngine:
         self.title = cmd_engine.title
         self.store = store or get_store()
         self.tools: ToolRegistry = build_default_registry(cmd_engine)
+        self.last_plan_steps: list[dict] = []
 
     # ------------------------------------------------------------------
     def plan(self, request: str) -> dict:
@@ -75,6 +76,8 @@ class MissionEngine:
             self.store.set_status(mid, "failed")
             return
 
+        self.last_plan_steps = [{"tool": s.get("tool"), "args": s.get("args", {})}
+                                for s in steps]
         self.store.add_steps(mid, steps)
         self.store.set_status(mid, "running")
         tts.say(f"باشه {self.title}، {len(steps)} مرحله برای این کار دارم. شروع می‌کنم.")

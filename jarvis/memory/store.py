@@ -5,9 +5,8 @@ from __future__ import annotations
 import json
 import sqlite3
 import threading
-import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from ..logging_setup import get_logger
@@ -68,7 +67,7 @@ END;
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 @dataclass
@@ -86,7 +85,7 @@ class Fact:
     updated_at: str = ""
 
     @classmethod
-    def _from_row(cls, row: sqlite3.Row) -> "Fact":
+    def _from_row(cls, row: sqlite3.Row) -> Fact:
         return cls(
             id=row["id"], text=row["text"], category=row["category"],
             source=row["source"], tags=json.loads(row["tags"] or "[]"),

@@ -39,8 +39,8 @@ def available() -> bool:
 
 
 def _creds():
-    from google.oauth2.credentials import Credentials
     from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
     from google_auth_oauthlib.flow import InstalledAppFlow
 
     ensure_dirs()
@@ -110,7 +110,7 @@ def send_email(to: str, subject: str, body: str) -> str:
 def upcoming_events(limit: int = 5, days: int = 7) -> str:
     try:
         svc = _svc("calendar", "v3")
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         end = now + datetime.timedelta(days=days)
         res = svc.events().list(
             calendarId="primary", timeMin=now.isoformat(), timeMax=end.isoformat(),
