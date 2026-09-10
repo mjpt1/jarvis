@@ -42,6 +42,7 @@ class SharedState:
     ear: float = 1.0
     owner_present: bool = True      # چهره‌ی صاحب دیده می‌شود (اگر تشخیص چهره فعال باشد)
     owner_gate_active: bool = False # بیدارباش مشروط به دیدنِ صاحب است
+    last_gesture: str = ""          # آخرین حرکتِ دستِ تشخیص‌داده‌شده
 
     # سیستم
     cpu_percent: float = 0.0

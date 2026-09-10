@@ -61,9 +61,10 @@ def eye_aspect_ratio(landmarks, indices, w, h):
 
 
 class EventManager:
-    def __init__(self, title: str, emit):
+    def __init__(self, title: str, emit, cfg=None):
         self.title = title
         self.emit = emit                      # emit(text)
+        self.cfg = cfg
         self.last_fired = {name: 0.0 for name in EVENTS}
         self.system_ready_fired = False
         self.was_tracking = False
@@ -80,6 +81,14 @@ class EventManager:
         if muted or not ready:
             return
         import random
+        if name == "TRACKING_LOCKED" and self.cfg is not None and self.cfg.alive_enabled:
+            try:
+                from . import persona
+                STATE.log(name)
+                persona.greet_owner(self.cfg)
+                return
+            except Exception:
+                pass
         line = random.choice(EVENTS[name]["lines"]).replace("{t}", self.title)
         STATE.log(name)
         self.emit(line)
@@ -120,7 +129,7 @@ class EventManager:
         self._fire("IDLE_STATUS")
 
 
-def camera_worker(cfg: Config, emit) -> None:
+def camera_worker(cfg: Config, emit, engine=None) -> None:
     try:
         import cv2
         import mediapipe as mp
@@ -172,11 +181,27 @@ def camera_worker(cfg: Config, emit) -> None:
         except Exception as exc:
             log.debug("face_id: %s", exc)
 
+    # تشخیصِ حرکاتِ دست (اختیاری)
+    gesture_rec = None
+    if cfg.gestures_enabled:
+        try:
+            from .models import ensure_gesture_recognizer
+            gopts = mp_vision.GestureRecognizerOptions(
+                base_options=mp_python.BaseOptions(
+                    model_asset_path=str(ensure_gesture_recognizer())),
+                running_mode=mp_vision.RunningMode.VIDEO, num_hands=1)
+            gesture_rec = mp_vision.GestureRecognizer.create_from_options(gopts)
+            log.info("تشخیصِ حرکاتِ دست فعال شد.")
+        except Exception as exc:
+            log.warning("[JRV-VISION-003] تشخیصِ حرکاتِ دست فعال نشد: %s", exc)
+
     with STATE.lock:
         STATE.camera_enabled = True
-    manager = EventManager(cfg.user_title, emit)
+    manager = EventManager(cfg.user_title, emit, cfg)
     start = time.time()
     _last_face_check = 0.0
+    _fi = 0
+    _prev_gray = None
     try:
         while STATE.running:
             ok, frame = cap.read()
@@ -186,6 +211,36 @@ def camera_worker(cfg: Config, emit) -> None:
             frame = cv2.flip(frame, 1)
             h, w = frame.shape[:2]
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            _fi += 1
+
+            # --- تشخیص حرکت (تفاضلِ فریم) ---
+            if cfg.motion_reactions and _fi % 4 == 0:
+                gray = cv2.resize(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), (80, 60))
+                if _prev_gray is not None:
+                    diff = float(np.mean(cv2.absdiff(gray, _prev_gray)))
+                    if diff > 16:
+                        try:
+                            from . import persona
+                            persona.on_motion(cfg)
+                        except Exception:
+                            pass
+                _prev_gray = gray
+
+            # --- تشخیص حرکاتِ دست ---
+            if gesture_rec is not None and _fi % 3 == 0:
+                try:
+                    g = gesture_rec.recognize_for_video(
+                        mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb),
+                        int((time.time() - start) * 1000))
+                    if g.gestures and g.gestures[0]:
+                        top = g.gestures[0][0]
+                        if top.score > 0.55 and top.category_name not in ("", "None"):
+                            with STATE.lock:
+                                STATE.last_gesture = top.category_name
+                            from . import persona
+                            persona.on_gesture(top.category_name, cfg, engine)
+                except Exception as exc:
+                    log.debug("gesture: %s", exc)
             mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
             ts_ms = int((time.time() - start) * 1000)
             try:

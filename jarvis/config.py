@@ -125,6 +125,12 @@ class Config:
     vision_min_confidence: float = 0.4
     face_id_enabled: bool = True          # بیدارباشِ بیومتریک (نیاز به face_recognition + عکس مرجع)
     face_id_tolerance: float = 0.5
+    gestures_enabled: bool = True          # تشخیصِ حرکاتِ دست جلوی دوربین
+    motion_reactions: bool = True          # واکنش به حرکت جلوی دوربین
+
+    # --- حسِ زنده‌بودن ---
+    alive_enabled: bool = True             # جمله‌های محیطیِ خودجوش (وابسته به autonomy_level)
+    idle_remark_minutes: int = 12          # هر چند دقیقه سکوت، یک جمله‌ی محیطی
 
     # --- ادغام‌های خارجی (نیاز به کلید؛ تا تنظیم نشوند خاموش‌اند) ---
     google_enabled: bool = True            # Gmail + Calendar؛ به credentials نیاز دارد

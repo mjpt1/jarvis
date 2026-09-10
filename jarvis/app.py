@@ -102,7 +102,11 @@ def run(cfg: Config, *, smoke_frames: int | None = None) -> None:
                      kwargs={"progress_cb": _cache_progress}, daemon=True).start()
 
     if cfg.enable_camera:
-        threading.Thread(target=camera_worker, args=(cfg, _emit_event_line), daemon=True).start()
+        threading.Thread(target=camera_worker, args=(cfg, _emit_event_line, engine),
+                         daemon=True).start()
+    if cfg.alive_enabled:
+        from .persona import idle_worker
+        threading.Thread(target=idle_worker, args=(cfg, engine), daemon=True).start()
     if cfg.enable_voice:
         threading.Thread(target=voice_worker, args=(cfg, engine), daemon=True).start()
 

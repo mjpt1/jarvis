@@ -24,6 +24,12 @@ FACE_LANDMARKER_URL = (
 )
 FACE_LANDMARKER_PATH = MODELS_DIR / "face_landmarker.task"
 
+GESTURE_URL = (
+    "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/"
+    "gesture_recognizer/float16/latest/gesture_recognizer.task"
+)
+GESTURE_PATH = MODELS_DIR / "gesture_recognizer.task"
+
 
 def _download(url: str, dest, attempts: int = 3, on_progress=None) -> None:
     ensure_dirs()
@@ -61,6 +67,14 @@ def ensure_face_landmarker(on_progress=None):
     _download(FACE_LANDMARKER_URL, FACE_LANDMARKER_PATH, on_progress=on_progress)
     log.info("مدل FaceLandmarker آماده شد.")
     return FACE_LANDMARKER_PATH
+
+
+def ensure_gesture_recognizer(on_progress=None):
+    if GESTURE_PATH.exists() and GESTURE_PATH.stat().st_size > 0:
+        return GESTURE_PATH
+    log.info("در حال دانلود مدل تشخیص حرکاتِ دست (فقط یک بار)...")
+    _download(GESTURE_URL, GESTURE_PATH, on_progress=on_progress)
+    return GESTURE_PATH
 
 
 def ensure_vosk_model(model_name: str, on_progress=None):
